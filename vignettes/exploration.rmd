@@ -1,0 +1,812 @@
+---
+title: "Exploration of arrays"
+author: "Alexander Matrunich"
+date: "10/28/2014"
+output: 
+  html_document:
+    toc: true
+---
+
+# Theory
+## Harmonized Commodity Description and Coding System[^wiki_hs]
+
+[^wiki_hs]: https://en.wikipedia.org/wiki/Harmonized_System
+
+ The HS is organized into 21 sections and 96 chapters.  First, the system assigns goods to sections, and then proceeds to assign these goods to their specific chapter, heading, and subheading, in that order, as necessary. The HS therefore assigns up to a total of 8 digits at the tariff-rate (legal) level. Two extra digits may also be assigned as statistical reporting numbers for a total of 10 digits to be listed on entries. To ensure harmonization, the contracting parties must employ at least 4- and 6-digit provisions, international rules and notes, but are free to adopt additional subcategories and notes. All existing products can be classified into the existing HS system by using the General Rules of Interpretation.  Product codes can be determined according to their form and function. An example of a product classified according to its form would be whole potatoes. The classification will also change depending on whether the potatoes are fresh or frozen. Fresh potatoes are classified in position 0701.90, under the Header *Potatoes, fresh or chilled*, Subheader *Other*, while frozen potatoes are classified in position 0710.10 under the Header *Vegetables (uncooked or cooked by steaming or boiling in water), frozen*, Subheader *Potatoes*.
+ 
+### How to Read an HS Number[^siccode]
+
+[^siccode]: http://siccode.com/en/pages/harmonized-system-hs
+
+* First number: Section[^section]
+* Second: Chapter
+* Third and fourth: Heading
+* Fifth and sixth: Subheading
+
+[^section]: It seems section number isn't included in HS code, because chapters' numbers go end-to-end.
+
+
+## Faostat Commodity List[^cpc_review]
+
+The classification of agricultural commodities currently used by FAO was developed in the ‘60s and is called Faostat Commodity List (FCL). The purpose of the FCL is to provide a framework for collecting and analysing data on production and trade of crops and livestock (fishery excluded) in order to compile the Supply Utilization Accounts and Food Balance Sheet (SUA/FBS) for the estimation of undernourishment. FAO commodity list is tailored on commodity trees so that the primary crop and its derived products are traceable all along the value chain of agricultural production.
+
+[^cpc_review]: CPC Ver.2 Review and Harmonization with Food and Agriculture Statistics in FAO. 6 May 2011
+
+The Faostat Commodity List includes 683 commodities 4, grouped into 20 chapters 5 , all including primary and derived products. FCL and CPC are linked by four different types of correlations:
+
+- “one-to-one”: one item in the FCL corresponds to one item in CPC;
+- “many-to-one”: FCL is more detailed than CPC;
+- “one-to-many”: FCL is less detailed than CPC;
+- “many-to-many”: FCL and CPC use different classification criteria.
+
+
+The analysis of the FCL-CPC correspondences showed that ≈75% of the FCL items are linked to CPC thorugh “one-to-one” and “many-to-one” relations. These types of link ensure a good correspondence between the two classifications, although the “many-to-one” type indicates that further detail would be desirable in CPC. The other 25% of the FCL-CPC correspondences are “one-to-many” or “many-to-many”, meaning that CPC is more detailed than FCL or that different classification criteria are used. In these cases CPC follows the HS structure, however, even if consistent with trade needs, data on production is not easily available. For these cases the FCL-CPC correspondence quality is lower and split ratios might be estimated. 
+
+For “many-to-one” links, detail in CPC Ver.2 is not sufficient. By increasing detail, however, the “many-to-one” are easily converted into “one-to-one” and full compatibility is ensured between FCL and CPC. The list of commodities for which FCL is more detailed than CPC is reported in Annex 1. The table specifies whether the commodity is included in HS. The result of the analysis showed that 35 out of the almost 140 items identified are in HS2007 or will be included in the HS2012; an eventual increase of detail in CPC Ver.2 would thus improve harmonization between the two schemes. Due to the specialized nature of FAO and with the CPC being a general purpose scheme, detail is often not sufficient in CPC. Therefore, when implementing CPC, FAO could use an expanded structure to allow further disaggregation when data is available. This structure should be based on the CPC Ver.2 at five digits used at the international level added with a sixth digit to accommodate more detailed data. In this way, FAO could use a classification fully based on CPC Ver.2 and, at the same time, as detailed as the Faostat Commodity List (FCL). By using this CPC-derived scheme able to accommodate the detail needed by FAO, more than 75% of the FCL items would be linked to CPC with “one-to-one” correspondences. A CPC expanded for agricultural production could also be used to provide a general framework and structure to guide data collection especially for countries in the process of establishing and developing a commodity classification.
+
+## FAOSTAT data
+
+See FAOSTAT Trade Matrix[^tradematrix]
+
+[^tradematrix]: http://data.fao.org/dataset?entryId=146410ae-7b66-4f1c-886b-79b1ab435327&tab=metadata
+
+Contact: Campeanu, Marianna marianna.campeanu@fao.org
+
+Only national trade data are available. The detailed trade data by 8-12 digits HS code and by partner are available only on the internal FAOSTAT.
+
+http://data.fao.org/dataset-data-filter?entryId=146410ae-7b66-4f1c-886b-79b1ab435327&tab=data
+
+# Field
+
+```{r options, echo=F}
+library(knitr)
+opts_chunk$set(fig.width=3, fig.height=3, dpi = 100, echo = T)
+```
+
+```{r load, echo=F, message=FALSE}
+library(data.table)
+library(dplyr)
+library(ggvis)
+library(ggplot2)
+library(XLConnect)
+library(stringr)
+# library(FAOSTAT)
+hsfclmap <- readRDS('data/hs2007fcl.rds')
+unctfaoareasmap <- read.table("data/unctfaoareasmap.csv", 
+                              header = T,
+                              sep = ",")
+source("functions.r")
+
+mxcunsd <-
+  readTradeFileComtrade(file = "mexico_unsd_raw_new.csv") %>%
+  select(hs = HS2007Code,
+         unsdpt = unsdPartnerArea,
+         flow,
+         quantsd = comtradeQuantity,
+         meta = metaData) %>%
+  mutate(hs = formatC(hs, width = 6, flag = "0", format = 'd'))
+
+mxcfcl <- readTradeFileFCL("mexico_test_comp_3.csv") %>%
+  select(area = faostatReportArea,
+         pt = faostatPartnerArea,
+         hs = HS2007Code,
+         fcl = FCLcode,
+         flow,
+         quantsd = sourceOtherQuantity,
+         valuesd = sourceValue,
+         quantfao = validQuantity,
+         valuefao = validValue) %>%
+  mutate(hs = formatC(hs, width = 6, flag = "0", format = 'd'))
+         
+```
+
+## FCL
+
+```{r fcl_load}
+fcl <- readRDS("data/fcl.rds")
+```
+
+
+### How to get root-leaves relations in FCL?
+
+```{r fcl_root_leaves}
+fcl_full %>%
+  select(fcl, fclgroup, fcltitle, fclscient) %>%
+  top_n(20, desc(fcl))
+```
+
+Questions have been sent to Valentina Ramaschiello:
+
+> Is it possible to construct an algorithm what can automatically detect these
+> relations between FCL items?
+> 
+> Root items have scientific names but not all of them, haven't they?
+> Does root item have the minimal FCL code in its "family"? So all items
+> following an item with scientific name are its descendants until next
+> item with scientific name.
+> 
+> Could you, please, also clarify what does mean star (*) in HS2007-FCL
+correspondence table?
+
+
+## Corresponding tables
+
+```{r map_load}
+hs7fclmap <- readRDS('data/hs2007fcl.rds')
+```
+
+
+FCL items which don't exist in the official HS2007-FCL corresponding table[^hs_fcl].
+
+[^hs_fcl]: http://www.fao.org/economic/ess/ess-standards/commodity/hs-item/en/
+
+```{r items_not_in_corrtabs}
+fcl_full$fcl[!(fcl_full$fcl %in% hs7fclmap$fcl)]
+```
+
+### Country codes
+
+Overview of FAO and UN codes.
+
+Is it possible to guess country code scheme?
+
+```{r countrycode}
+library(countrycode)
+countrycode_data %>%
+  select(country = country.name, fao, un) %>%
+  summary()
+
+countrycode_data %>% 
+  summarise(faoinun = sum(fao %in% un),
+            uninfao = sum(un %in% fao))
+```
+
+We need a function for convinient conversion of country codes. From FAO codes to UN codes, vica verca and from and to names.
+
+
+## Mexico trading
+
+```{r mxc_trade_fcl}
+
+
+mxcfcl %>%
+  filter(pt == 4 & 
+           fcl == 191)
+
+getFAO(domainCode = "TM", 
+       elementCode = 5922, 
+       itemCode = 191, 
+       yearRange = 2011,
+       countrySet = 138,
+       outputFormat = "long",
+       printURL = T)
+
+getFAO(domainCode = "TM", 
+       elementCode = 5922, 
+       itemCode = 191, 
+       yearRange = 2011,
+       countrySet = 4,
+       outputFormat = "long")
+
+
+getFAO(domainCode = "RL", 
+       elementCode = 5110, 
+       itemCode = 6621,
+       yearRange = 2011,
+       countrySet = 4,
+       outputFormat = "long",
+       printURL =T)
+```
+
+Hm-hm: 5606420 vs 5606! Rounding?
+
+
+```{r mxc_trade_unsd}
+mxchs <- readTradeFileComtrade(file = "mexico_unsd_raw_new.csv") 
+
+hs_types <- mxchs %>%
+  select(HS2007Code) %>%
+  unique()
+```
+
+
+Remove ending zeros from HS-codes in both Mexico datasets.
+
+### FAO data
+
+Structure of Mexico trade in FCL format.
+
+```{r fcl_overview}
+str(mxcfcl)
+
+head(mxchs)
+
+mxchsapi <- getunsd(484, 2011, partner = 84, flow = 2)
+mxchsapi %>%
+  filter(hs == "010110")
+
+mxcfcl %>% 
+  filter(fcl %in% hs2fcl("101.1") & partner == 23)
+
+mxcfcl %>% 
+  filter(partner == 84 & flow == 2)
+
+```
+
+
+
+Amount of unique FCL itemcodes is `r length(unique(mxcfcl$FCLcode))`.
+
+Amount of unique HS codes is `r length(unique(mxcfcl$HS2007Code))`
+
+```{r numb_of_hs_per_item, echo=FALSE}
+
+mxcfcl %>%
+  group_by(FCLcode) %>%
+  summarize(hs_n = length(unique(HS2007Code))) %>%
+  ungroup() %>%
+  #   ggvis(~ hs_n)  %>%  layer_histograms() %>% 
+#   scale_numeric("x", trans = "log", expand = 0)
+  ggplot(aes(hs_n)) + geom_histogram() 
+
+```
+
+
+```{r numb_of_items_per_hs}
+
+mxcfcl %>%
+  group_by(HS2007Code) %>%
+  summarize(fcl_n = length(unique(FCLcode))) %>%
+  ungroup %>%
+  ggplot(aes(fcl_n)) + geom_histogram(binwidth = 1)
+
+```
+
+```{r type_of_relation}
+fcl_types <- mxcfcl %>%
+  select(HS2007Code, FCLcode) %>%
+  unique() %>%
+  group_by(FCLcode) %>%
+  mutate(hs_n = length(unique(HS2007Code))) %>%
+  group_by(HS2007Code) %>%
+  mutate(items_n = length(unique(FCLcode))) %>%
+  ungroup() %>%
+  mutate(relation_type = 
+           ifelse(hs_n == 1 & items_n == 1, "one-to-one",
+                 ifelse(hs_n == 1 & items_n > 1, "one-hs-to-many-fcl",
+                        ifelse(hs_n > 1 & items_n == 1, "many-hs-to-one-fcl",
+                               ifelse(hs_n > 1 & items_n > 1, "many-to-many",
+                                      NA)))))
+fcl_types %>%
+  ggvis(~relation_type) %>%
+  layer_bars()
+```
+
+### UN data
+
+```{r mxc_unsd}
+head(mxcfcl, 1)
+areas(3, from = "fao")
+# mxcunsd %>%
+#   filter(unsdPartnerArea == 8 &
+#            HS2007Code == 91099)
+
+```
+
+
+
+#### Crosscut with HS data
+
+```{r, echo=TRUE}
+sum(fcl_types$HS2007Code %in% hs_types$HS2007Code)/nrow(fcl_types)
+sum(hs_types$HS2007Code %in% fcl_types$HS2007Code)/nrow(hs_types)
+fcl_types[!(fcl_types$HS2007Code %in% hs_types$HS2007Code), 
+          c("HS2007Code", "")]
+fcl_types %>%
+  select(HS2007Code, FCLcode) %>%
+  filter(!(HS2007Code %in% hs_types$HS2007Code))
+hs_types$HS2007Code[!(hs_types$HS2007Code %in% fcl_types$HS2007Code)]
+
+```
+### With official maps
+
+
+## 11/10/14
+
+1. Take first fcl-element
+2. Is the element linked with HS as one-to-one?
+    +. Yes --- go to checking of units
+    +. No --- aggregate all fuzzy/inexplicit elements (onefcl-to-many, many-to-many, 
+    manyfcl-to-one). But firstly check units!
+```{r simple_correspond}
+
+```
+
+### Mexico trade 2011 data from FAOSTAT3
+```{r}
+mxcfclfao3 <- read.table("mexico_faostat.csv", header = T,
+                         sep = ',', stringsAsFactors = F,
+                         nrows = 13548 # don't read final line with timestamp
+                         ) %>%
+  select(dmn = Domain.Code,
+         area = Reporter.Country.Code,
+         areaname = Reporter.Countries,
+         pt = Partner.Country.Code,
+         ptname = Partner.Countries,
+         el = Element.Code,
+         elname = Element,
+         fcl = Item.Code,
+         fclname = Item,
+         year = Year,
+         unit = Unit,
+         value = Value,
+         flag = Flag,
+         flagdescr = Flag.Description)
+
+table(mxcfclfao3$unit, exclude = NULL)
+table(mxcfclfao3$flag, exclude = NULL)
+table(mxcfclfao3$flagdescr, exclude = NULL)
+table(mxcfclfao3$elname, exclude = NULL)
+```
+
+We choose HS format from [UN Comtrade Databse site](http://comtrade.un.org/data/):
+
+* no comma
+* even number of digits in a commodity code (6 in our case)
+* leading zero for codes with odd number of digits (or compare them as numeric? No - UNSD API needs leading zero)
+
+Number of HS-elements in map without a comma.
+```
+sum(!str_detect(hsfclmap$hs, "\\."))
+unique(hsfclmap$hs[!str_detect(hsfclmap$hs, "\\.")])
+```
+Ok, they are all 3- or 4-digit, so we can multiply everything by 100.
+```
+formatC(123.23 * 100, width = 6, flag = "0", format = 'd')
+```
+But there are many 7-digit codes:
+```
+table(str_length(hsfclmap$hs))
+unique(hsfclmap$hs[str_length(hsfclmap$hs) == 7])
+```
+Ok, no problems with them. 6-digit?
+
+```
+unique(hsfclmap$hs[str_length(hsfclmap$hs) == 6])
+```
+Ok, 1006.4 becomes 100640. It's ok with UNSD.
+
+**Converted in map.**
+
+## 11/11/2014
+
+Convert Mexico HS-code to 6-digit number (FAO dataset).
+```
+table(str_length(mxcfcl$hs))
+sum(str_detect(mxcfcl$hs, "\\."))
+```
+They all are 5- or 6-digit without dot. We need to add leading zero.
+
+Done: hs changed during loading (not in Michael's function!).
+
+What about SD-dataset? The same. Changed.
+
+### Manual corresponding
+
+We have _mxcfcl_ and _mxcunsd_. Trying to convert first row from _mxcfcl_.
+
+```{r}
+mxcfcl[1,]
+unarea(138)
+unarea(3)
+areas(3, "fao")
+fcl2hs(723)
+```
+We have four corresponding items in HS.
+
+```{r}
+mxcfcl %>%
+  filter(hs %in% fcl2hs(723) & pt == 3)
+```
+Only one row for Albania. Simple case.
+
+Trying to get data from UNSD API.
+
+```{r}
+dim(getunsd(area = unarea(138), 
+             year = 2011, 
+             partner = unarea(3), 
+             flow = 1, 
+             desc = T))
+```
+Ups, no code argument in getunsd(). Corrected.
+
+```{r}
+getunsd(area = unarea(138), 
+        year = 2011, 
+        partner = unarea(3), 
+        flow = 1,
+        code = fcl2hs(723),
+        desc = T)
+```
+Ok. And compare with fresh data from FAOSTAT3.
+
+```{r}
+mxcfclfao3 %>%
+  filter(area == 138 & pt == 3 & fcl == 723)
+```
+Ok! Let's try FAOSTAT package again.
+
+```{r}
+getFAO(domainCode = "TM", 
+       elementCode = 5610, 
+       itemCode = 723, 
+       yearRange = 2011,
+       countrySet = 138,
+       outputFormat = "long",
+       printURL = T)
+```
+
+Failed: empty again.
+
+We need function to convert UNSD data to FAO format.
+
+```{r}
+fcl2hs(723)
+hs2fcl(fcl2hs(723))
+```
+
+Reading dplyr's 'nse' vignette to fihish reltype() function.
+
+```{r}
+
+hs7fclmap$reltype <- reltype(hs7fclmap)
+table(hs7fclmap$reltype)
+hs7fclmap$group <- NA
+for (i in hs7fclmap$fcl) {
+    fclingroup <- hs2fcl(fcl2hs(hs2fcl(fcl2hs(i))))
+    groupname <- min(fclingroup)
+    hs7fclmap$group[hs7fclmap$fcl %in% fclingroup] <- groupname
+  }
+
+x <- hs7fclmap %>%
+  select(fcl, hs, group, reltype) 
+x[1:100,]
+rm(x)
+```
+
+**Error in reltype()! Different types to one hs.**
+
+Also certain problems with groups:
+```{r}
+fcl2hs(1171)
+hs2fcl(fcl2hs(1171))
+fcl2hs(1181)
+hs2fcl(fcl2hs(1181))
+```
+
+Now groups are fixed.
+
+```{r}
+as.data.frame(table(hs7fclmap$group)) %>%
+  arrange(desc(Freq)) %>%
+  top_n(20)
+fcl(674)
+fcl2hs(674)
+hs2fcl(fcl2hs(674))
+fcl(hs2fcl(fcl2hs(674)))
+fcl2hs(hs2fcl(fcl2hs(674)))
+hs2fcl(fcl2hs(hs2fcl(fcl2hs(674))))
+fcl(hs2fcl(fcl2hs(hs2fcl(fcl2hs(674)))))
+```
+Ok, tea and offals are in the same group. No calories for human, yea.
+
+```{r}
+fcl(hs2fcl(fcl2hs(hs2fcl(fcl2hs(919)))))
+```
+
+Is it possible to get long lists of codes from UNSD API?
+
+```{r}
+x <- getunsd(area = "all", 
+        year = 2011, 
+        partner = 842, 
+        flow = 1,
+        code = fcl2hs(hs2fcl(fcl2hs(674)))[1:20],
+        debug = F)
+```
+
+No...
+Ok, 20 is maximum.
+
+## 12/11/2014
+
+Shiny is working but without preview of applications.
+
+Group saved in map's rds file.
+
+```{r}
+# Checking is fcl-group connection unique.
+
+hs7fclmap %>%
+  select(fcl, group) %>%
+  group_by(fcl) %>%
+  summarize(fcl_n = length(unique(group))) %>%
+  arrange(desc(fcl_n))
+
+
+
+str(mxcfclfao3)
+d <- mxcfclfao3 %>%
+  select(area, pt, el = elname,
+         fcl, year, unit, value) %>%
+  inner_join(hs7fclmap %>%
+              select(fcl, group) %>% 
+               distinct(), by = "fcl")
+
+table(d$el)
+table(d$unit)
+d[1,]
+getunsd(area = unarea(138), 
+        year = 2011, 
+        partner = unarea(2), 
+        flow = 1,
+        code = hs7fclmap$hs[hs7fclmap$group == 18],
+        desc = T)
+```
+So we need following helper functions:
+
+* To get a vector of fcl or hs items in group. DONE
+* To check measurement units.
+* Like getunsd(), but FAO codes (items and countries) on input and output. 
+* To get data for groups from FAOSTAT and from UNSD.
+
+
+Testing
+
+```{r}
+getunsd(area = unarea(138), 
+        year = 2011, 
+        partner = unarea(840), 
+        flow = 1,
+        code = hsingroup(20),
+        desc = T, debug = T)
+
+getunsdfao(area = 138, year = 2011, 
+           partner = 231, flow = 1,
+           code = fclingroup(20),
+           desc = T)
+```
+
+Something strange with countrycode package. USA have 840 UN-code instead of 842.
+
+```{r}
+library(countrycode)
+countrycode_data %>%
+  filter(country.name == "United States")
+countrycode_data %>%
+  filter(un %in% c(840, 842, 841))
+
+```
+
+## 13/11/2014
+
+Hm. UN Comtrade Database uses its own USA code 842[^usa842] (USA, Puerto Rico and US Virgin Islands) instead of UN' 840[^usa840]. So it's easier to use _comtradeCountryMapping.csv_ instead of _countrycode_ package.
+
+[^usa842]: http://comtrade.un.org/db/mr/daReportersResults.aspx?r=842
+[^usa840]: http://unstats.un.org/unsd/methods/m49/m49alpha.htm
+
+```{r}
+d <- mxcfclfao3 %>%
+  select(area, pt, el = elname,
+         fcl, year, unit, value) %>%
+  inner_join(hs7fclmap %>%
+              select(fcl, group) %>% 
+               distinct(), by = "fcl")
+
+
+```
+ Not sure about quantity units in Mexico dataset.
+ 
+ 
+```{r}
+
+f <- as.data.frame(mxcfcl) %>%
+  select(-ends_with("sd"), -hs) %>%
+  left_join(hsfclmap %>%
+               select(fcl, group) %>% 
+               distinct(), by = "fcl") %>%
+  group_by(flow, pt, group) %>%
+  summarize(quantfao = sum(quantfao),
+            valuefao = sum(valuefao)) %>%
+  ungroup()
+```
+Now we need to modify getunsd() to allow more than 20 codes and to control number of requests to API (1 per second). But firstly let's try with data we have.
+
+```{r}
+e <- as.data.frame(mxcunsd) %>%
+  select(-meta) %>%
+  left_join(hsfclmap %>%
+               select(hs, group) %>% 
+               distinct(), by = "hs") %>%
+  group_by(flow, unsdpt, group) %>%
+  summarize(quantsd = sum(quantsd)) %>%
+  ungroup()
+length(unique(e$group))
+length(unique(f$group))
+length(unique(e$unsdpt))
+length(unique(f$pt))
+summary(e)
+summary(f)
+sum(!(unique(mxcunsd$hs) %in% hs7fclmap$hs))
+x <- unique(mxcunsd$hs[!(mxcunsd$hs %in% hs7fclmap$hs)])
+x
+sum(unique(mxcfcl$hs) %in% x)
+```
+
+Marianna's map is wider than official one.
+
+```{r}
+nrow(mxcfcl[mxcfcl$hs %in% x,])
+head(mxcfcl[mxcfcl$hs %in% x,])
+```
+
+```
+> fcl2hs(212)
+[1] "110609"
+> hs2fcl(110610)
+numeric(0)
+> hs2fcl(220820)
+numeric(0)
+```
+
+Something wrong in map. In converting HS code to 6-digit format.
+```{r}
+hs7fclmap %>%
+  filter(hs == 110610 | fcl == 212)
+```
+** Error in hssub extracting!!!** In hs7fclmap 110609 hssub extracted as 1 instead of 9.
+No. Error in final converting. CORRECTED.
+```{r}
+hs <- "1106.1"
+as.numeric(str_replace(hs, "^[0-9]{3,4}\\.([0-9]{0,2})", "\\1"))
+as.numeric(hs)
+as.numeric(hs) * 100
+formatC(as.numeric(hs) * 100, width = 6, flag = "0", format = 'd')
+# Unpredictable!!!
+formatC(as.numeric(hs) * 100, width = 6, flag = "0", format = 'd')
+formatC(110610, width = 6, flag = "0", format = 'd')
+formatC(1106.1, width = 6, flag = "0", format = 'd')
+formatC(1106.1 * 100, width = 6, flag = "0", format = 'd')
+formatC(as.integer(1106.1 * 100), width = 6, flag = "0", format = 'd')
+1106.1 * 100 < 110610
+1106.1 * 100 == 110610
+typeof(1106.1 * 100 )
+typeof(ceiling(1106.1 * 100))
+ceiling(1106.1 * 100) == 110610
+ceiling(1106.9 * 100) == 110690
+round(1106.9 * 100) == 110690
+```
+
+```{r}
+x <- unique(mxcunsd$hs[!(mxcunsd$hs %in% hs7fclmap$hs)])
+mxcfcl[mxcfcl$hs %in% x,]
+```
+
+## 14/11/2014
+
+```{r}
+f1 <- f %>%
+  select(flow, pt, group, quantfao) %>%
+  inner_join(e %>%
+              mutate(pt = faoarea(unsdpt)) %>%
+              select(-unsdpt), by = c('flow', 'pt', 'group')) %>%
+  mutate(quantfao2 = quantsd / 1000,
+         diff = (quantfao - quantfao2) / quantfao)
+
+e$pt <- faoarea(e$unsdpt)
+sum(!(unique(e$unsdpt) %in% a$unct))
+unique(e$unsdpt[!(e$unsdpt %in% a$unct)])
+
+```
+
+```{r envir_experiments}
+e1 <- environment()
+with(e1, source("functions.r", local = T))
+source("functions.r", local = e1)
+rm(list = ls())
+
+attach(e1)
+
+```
+
+```{r}
+str(f1)
+head(f1)
+summary(f1)
+f1 %>%
+  filter(!is.na(diff)) %>%
+  ggvis(x = ~diff) %>%
+  layer_histograms()
+
+f1 %>%
+  filter(!is.na(diff)) %>%
+  ggplot(aes(diff)) + geom_density()
+
+f1 %>%
+  filter(!is.na(diff)) %>%
+  ggplot(aes(diff)) + geom_histogram()
+
+
+ggvis(f1[!is.na(f1$diff),], props(x = ~diff)) + layer_densities()
+
+f1 %>%
+  filter(!is.na(diff) & diff < -50)
+
+fcl(fclingroup(235))
+
+areas(150, from = 'fao')
+
+x1 <- getunsd(484, 2011, 528, 1, hsingroup(235)[1:20], desc = T)
+x2 <- getunsd(484, 2011, 528, 1, hsingroup(235)[21:24], desc = T) 
+x <- rbind(x1, x2)
+sum(x$qt)
+
+x3 <- getunsd(484, 2011, 528, 1, hsingroup(235)) 
+```
+
+```{r timing of UNCT API}
+library(lubridate)
+x <-  "2014-11-14T04:51:33.3390271-05:00"
+ymd_hms(x)
+y <-  "2014-11-14T04:51:33.334-05:00"
+ymd_hms(x) > ymd_hms(y)
+z <- "2014-10-14T04:51:33.334-05:00"
+ymd_hms(x) > ymd_hms(z)
+ymd_hms(x) - ymd_hms(z)
+ymd_hms(x) - ymd_hms(y)
+ymd_hms(y) - ymd_hms(x)
+w <-  ymd_hms("2014-11-14T04:51:34.334-05:00")
+ymd_hms(x) - w
+w - ymd_hms(x)
+ymd_hms(x) < w
+w < ymd_hms(x)
+x <- ymd_hms(x3[[1]][[2]]$validation$count$started)
+y <- ymd_hms(x3[[1]][[2]]$validation$count$finished)
+y - x
+
+x <- ymd_hms(now())
+x + seconds(1)
+```
+
+```{r}
+mxcfcl %>%
+  
+```
+
+```{r}
+library(httr)
+
+# http://api.data.fao.org/1.0/esb-rest/resources/examples.html
+# Get the database list:
+r <- GET("http://data.fao.org/developers/api/resources/database?authKey=d30aebf0-ab2a-11e1-afa6-0800200c9a66&version=1.0")
+
+# Get the list of resources of type 'query' stored in 'faostat' database:
+r <- GET("http://data.fao.org/developers/api/resources/query/faostat?authKey=d30aebf0-ab2a-11e1-afa6-0800200c9a66&version=1.0")
+
+# Get the country-population-by-area-time resource descriptor:
+r <- GET("http://data.fao.org/developers/api/resources/query/faostat/country-population-by-area-time?authKey=d30aebf0-ab2a-11e1-afa6-0800200c9a66&version=1.0")
+
+# Get the faostat database resource descriptor:
+r <- GET("http://data.fao.org/developers/api/resources/database/faostat?authKey=d30aebf0-ab2a-11e1-afa6-0800200c9a66&version=1.0")
+
+# Get the datastream 'query' of country-population-by-area-time resource:
+r <- GET("http://data.fao.org/developers/api/resources/query/faostat/country-population-by-area-time/query?authKey=d30aebf0-ab2a-11e1-afa6-0800200c9a66&version=1.0")
+```
+
+```{r}
+u <- "http://faostat3.fao.org/wds/api?out=csv&db=faostat2&select=A.AreaCode[FAOST_CODE],D.year[Year],D.value[Value]&from=data[D],element[E],item[I],area[A]&where=D.elementcode(5610),D.itemcode(723),D.domaincode('TM'),D.year(2011),A.AreaCode(138),JOIN(D.elementcode:E.elementcode),JOIN(D.itemcode:I.itemcode),JOIN(D.areacode:A.areacode)&orderby=E.elementnamee,D.year"
+u <- "http://faostat3.fao.org/wds/api?out=csv&db=faostat2&select=D.year[Year],D.value[Value]&from=data[D]&where=D.domaincode('TM')"
+content(GET(u))
+```
+

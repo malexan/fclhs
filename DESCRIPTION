@@ -1,0 +1,11 @@
+Package: fclhs
+Title: Convert HS2007 to FCL
+Version: 0.1
+Authors@R: "Alexander Matrunich <alexander@matrunich.com> [aut, cre]"
+Description: What the package does (one paragraph)
+Depends:
+    R (>= 3.1.2)
+License: What license is it under?
+LazyData: true
+Imports:
+    lubridate

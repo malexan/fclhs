@@ -1,0 +1,136 @@
+---
+title: "Mexico trade data 2011"
+author: "Alexander Matrunich"
+date: "11/22/2014"
+output: html_document
+---
+
+```{r options, echo=F}
+library(knitr)
+opts_chunk$set(fig.width=3, fig.height=3, dpi = 100, echo = T)
+```
+
+```{r load, echo=F, message=FALSE}
+# library(data.table)
+library(dplyr)
+# library(ggvis)
+# library(ggplot2)
+# library(XLConnect)
+library(stringr)
+library(reshape2)
+```
+
+### Mexico trade 2011 data from FAOSTAT3
+
+```{r load_fao}
+mxcfao3 <- read.table(system.file("extdata", 
+                                  "mexico_faostat.csv", 
+                                  package = "fclhs"), 
+                      header = T,
+                      sep = ',', stringsAsFactors = F,
+                      nrows = 13548 # drop final line with timestamp
+                      ) %>%
+  select(#dmn = Domain.Code,
+         area = Reporter.Country.Code,
+         areaname = Reporter.Countries,
+         pt = Partner.Country.Code,
+         ptname = Partner.Countries,
+#          el = Element.Code,
+         elname = Element,
+         fcl = Item.Code,
+         fclname = Item,
+         year = Year,
+         unit = Unit,
+         value = Value #,
+#          flag = Flag,
+#          flagdescr = Flag.Description
+) %>%
+  mutate(flow = as.numeric(str_detect(elname, "^Export")) + 1,
+         elname = str_extract(elname, "Quantity|Value"),
+         group = fclgroup(fcl)) %>%
+  rename(variable = elname)
+```
+
+```{r}
+t0 <- mxcfao3 %>%
+  group_by(flow, pt, group, variable, unit) %>%
+  filter(pt == faoarea(842)) %>%
+  summarize(value = sum(value)) %>%
+  ungroup() %>%
+  select(-pt, -unit)
+```
+
+```{r get1unsd}
+mxcus <- getunsd(area = unctarea(138),
+                 year = 2011,
+                 partner = 842, #USA
+                 desc = T)
+
+t <- mxcus %>%
+  rename(Quantity = qt, Value = value) %>%
+  melt(measure.vars = c('Quantity', 'Value')) %>%
+  mutate(group = hsgroup(hs),
+         area = faoarea(area),
+         pt = faoarea(pt)) %>%
+  select(flow, qtdesc, variable, value, group) %>%
+  filter(qtdesc == "Weight in kilograms" &
+           !is.na(group)) %>%
+  group_by(flow, group, variable, qtdesc) %>%
+  summarize(value = sum(value)) %>%
+  mutate(ctvalue = round(value / 1000)) %>%
+  select(-value) %>%
+  ungroup()
+  
+
+table(t$qtdesc)
+table(t0$unit)
+
+t %>%
+  filter(qtdesc != "Weight in kilograms" &
+           variable == "Value") %>%
+  group_by(is.na(group)) %>%
+  summarize(Value = sum(Value))
+```
+
+```{r}
+mxcfao3 %>%
+  filter(pt == faoarea(842))
+```
+
+```{r}
+t <- t0  %>% 
+  left_join(t) %>%
+  mutate(diff = (value - ctvalue),
+         prop = diff / value)
+library(ggplot2)
+ggplot(t, aes(diff, color = variable)) + geom_density()
+ggplot(t, aes(prop, color = variable)) + geom_density()
+ggplot(t, aes(prop, fill = variable)) + geom_histogram(position = 'dodge')
+summary(t$diff)
+t %>%
+  filter(diff == -Inf)
+
+t %>%
+  filter(flow == 2 & group == 49)
+
+t %>%
+  filter(abs(prop) > 1) %>%
+  select(group)
+
+t %>%
+  filter(group == 217) 
+# Difference in quantity but not in value
+
+t %>%
+  filter(group == 49)
+
+# Diff due to in CT quantity is 810 kg, in FAO - 0 tonn. 
+# Maybe ceiling instead of round?
+
+t %>%
+  filter(group == 334)
+
+# In FAO it is unofficial figure (quantity).
+
+```
+

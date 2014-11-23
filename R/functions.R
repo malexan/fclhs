@@ -1,0 +1,137 @@
+
+findCorrespondCode <- function(code, cortab = hs7map_hs_items) {
+  if (length(code) > 1) return(unlist(lapply(code, findCorrespondCode)))
+  return(NULL)
+}
+
+#' Convert coutrycodes from FAO to UN and vice versa
+#' 
+#' @import stringr
+#' @importFrom countrycode countrycode 
+areas <- function(value, from, to) {
+  
+  if(missing(value)) stop('Value is missing')
+  if(length(value) > 1) return(do.call(rbind, lapply(value, areas, from = from, to = to)))
+  
+  # Character value
+  if(!str_detect(value, "^[0-9]+$")) {
+    
+    if(missing(from) & missing(to)) {
+      return(data.frame(country = countrycode(value, "country.name", "country.name"),
+                        fao =  countrycode(value, "country.name", "fao"),
+                        un = countrycode(value, "country.name", "un"),
+                        stringsAsFactors = F))
+    }
+  }
+  # Numeric value
+  if(str_detect(value, "^[0-9]+$")) {
+    if(missing(from) & missing(to)) {
+      stop("Don't know how to convert. Please specify 'from' either 'to' argument")
+    }
+    return(data.frame(country = countrycode(value, from, "country.name"),
+                      fao =  countrycode(value, from, "fao"),
+                      un = countrycode(value, from, "un"),
+                      stringsAsFactors = F))
+  }
+}
+
+
+areas2 <- function(area, to) {
+  if(length(area) > 1) return(unlist(lapply(area, areas2, to)))
+  if(to == "fao") area <- 
+    unctfaoareasmap$fao[unctfaoareasmap$unct == area]
+  if(to == "unct") area <- 
+    unctfaoareasmap$unct[unctfaoareasmap$fao == area]
+  if(length(area) == 0) return(NA)
+  area
+}
+
+
+#' Convert UN ComTrade country codeinto corresponding FAO area code.
+#' @export
+faoarea <- function(unct) {
+  areas2(unct, "fao")
+}
+
+#' Convert FAO area code into corresponding UN ComTrade country code.
+#' @export
+unctarea <- function(fao) {
+  areas2(fao, "unct")
+}
+
+#' Convert HS2007 code into corresponding FCL codes.
+#' @export
+hs2fcl <- function(hs) {
+  unique(hsfclmap$fcl[hsfclmap$hs %in% hs])
+}
+
+#' Convert FCL code into corresponding HS2007 codes.
+#' @export
+fcl2hs <- function(fcl) {
+  unique(hsfclmap$hs[hsfclmap$fcl %in% fcl])
+}
+
+#' Description of FCL-item
+#' @export
+descfcl <- function(item) {
+  fcl[fcl$fcl %in% item,]
+}
+
+# It doesn't work correclty!!!
+reltype <- function(d) {
+  d <- d %>%
+    select_(~fcl, ~hs) %>%
+    group_by_(~fcl) %>%
+    mutate_(hs_n = ~length(unique(hs))) %>%
+    group_by_(~hs) %>%
+    mutate_(items_n = ~length(unique(fcl))) %>%
+    ungroup() %>%
+    mutate_(reltype = 
+              ~ifelse(hs_n == 1 & items_n == 1, "one-to-one",
+                      ifelse(hs_n == 1 & items_n > 1, "one-hs-to-many-fcl",
+                             ifelse(hs_n > 1 & items_n == 1, "many-hs-to-one-fcl",
+                                    ifelse(hs_n > 1 & items_n > 1, "many-to-many",
+                                           NA)))))
+  d$reltype
+}
+
+#' List FCL codes in a correspondence group.
+#' @export
+fclingroup <- function(group) {
+  sort(unique(hsfclmap$fcl[hsfclmap$group == group]))
+}
+
+#' List HS codes in a correspondence group.
+#' @export
+hsingroup <- function(group) {
+  sort(unique(hsfclmap$hs[hsfclmap$group == group]))
+}
+
+#' Returns correspondence group for fcl code.
+#' @export
+fclgroup <- function(fcl) {
+  if (length(fcl) > 1) return(unlist(lapply(fcl, fclgroup)))
+  x <- unique(hsfclmap$group[hsfclmap$fcl == fcl])
+  if (length(x) < 1) return(NA)
+  if (length(x) > 1) {
+    warning(paste("FCL code ", fcl, " is included in several groups: ",
+                                   x, ". Return only first.", sep = ""))
+    return(x[1]) 
+  }
+  x
+}
+
+
+#' Returns correspondence group for HS2007 code.
+#' @export
+hsgroup <- function(hs) {
+  if (length(hs) > 1) return(unlist(lapply(hs, hsgroup)))
+  x <- unique(hsfclmap$group[hsfclmap$hs == hs])
+  if (length(x) < 1) return(NA)
+  if (length(x) > 1) {
+    warning(paste("HS code ", hs, " is included in several groups: ",
+                  x, ". Return only first.", sep = ""))
+    return(x[1]) 
+  }
+  x
+}
