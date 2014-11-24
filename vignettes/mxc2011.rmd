@@ -152,3 +152,4 @@ table(mxcfao3$Year)
 table(mxcfao3$Element.Code, mxcfao3$Element)
 ```
 
+No limits in FAOsAT3 gui. 
