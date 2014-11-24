@@ -24,7 +24,7 @@ library(reshape2)
 
 ```{r load_fao}
 mxcfao3 <- read.table(system.file("extdata", 
-                                  "mexico_faostat.csv", 
+                                  "mexico_faostat.csv.gz", 
                                   package = "fclhs"), 
                       header = T,
                       sep = ',', stringsAsFactors = F,
@@ -132,5 +132,23 @@ t %>%
 
 # In FAO it is unofficial figure (quantity).
 
+```
+
+## 11/24/2014
+
+```{r}
+
+mxcfao3 <- read.table(system.file("extdata", 
+                                  "mxc_2011_2007_all_all.csv", 
+                                  package = "fclhs"), 
+                      header = T,
+                      sep = ',', stringsAsFactors = F,
+                      nrows = 63582 # drop final line with timestamp
+                      )
+
+dim(mxcfao3)
+tail(mxcfao3)
+table(mxcfao3$Year)
+table(mxcfao3$Element.Code, mxcfao3$Element)
 ```
 

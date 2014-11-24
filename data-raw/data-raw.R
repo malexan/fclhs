@@ -89,3 +89,14 @@ unctfaoareasmap <- read.table(file = system.file("extdata",
                               header = T, sep = ",")
 names(unctfaoareasmap) <- c("unct", "fao")
 save(unctfaoareasmap, file = 'data/unctfaoareasmap.rda')
+
+
+
+data <- read.table(system.file("extdata", 
+                                  "mxc_2011_2007_all_all.csv.gz", 
+                                  package = "fclhs"), 
+                      header = T,
+                      sep = ',', stringsAsFactors = F,
+                      nrows = 63582 # drop final line with timestamp
+)
+
