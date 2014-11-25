@@ -3,7 +3,7 @@
 #' @import dplyr
 #' @importFrom lubridate ymd_hms seconds now
 #' @export
-getunsd <- function(area, year, partner = "all", 
+getunct <- function(area, year, partner = "all", 
                     flow = "all", code = "AG6", compact = T,
                     desc = F, debug = F) {
   # http://comtrade.un.org/data/doc/api/
@@ -81,7 +81,7 @@ getunsdfao <- function(area, year, partner,
   area <- unctarea(area)
   partner <- unctarea(partner)
   code <- fcl2hs(code)
-  d <- getunsd(area = area,
+  d <- getunct(area = area,
                year = year,
                partner = partner,
                flow = flow,
