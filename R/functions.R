@@ -141,3 +141,23 @@ hsgroup <- function(hs) {
   x
 }
 
+#' Extract particular datasets from FAOSTAT3 data.
+#' 
+#' @param area Numeric. Codes of reporter countries from FAO classification.
+#' @param year Numeric. Reported year.
+#' @param partner Numeric. Codes of partner countries from FAO classification.
+#'   All if omitted.
+#' @param flow. Numeric. 1 - Import, 2 - Export. Both if omitted.
+#' @param compact. Logical. Should column names be standardized. TRUE by default.
+#' @param desc. Logical. Should columns with descriptions be included. 
+#'   FALSE by default.
+#' @param data. Data frame to take original data from.
+#' @param debug. Logical. 
+#' 
+#' @import dplyr
+#' @export
+getfao <- function(area, year, partner, 
+                    flow = "all", compact = T,
+                    desc = F, data, debug = F) {
+  
+}

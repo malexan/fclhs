@@ -3,7 +3,7 @@
 \alias{uncttofao}
 \title{Convert data extracted from UN Comtrade API to FAOSTAT format.}
 \usage{
-uncttofao(data)
+uncttofao(data, long = T, faonames = T, quantity = F, netweight = F)
 }
 \description{
 Convert data extracted from UN Comtrade API to FAOSTAT format.

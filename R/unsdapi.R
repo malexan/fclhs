@@ -66,7 +66,7 @@ getunct <- function(area, year, partner = "all",
                area = ~rtCode,
                pt = ~ptCode,
                qt = ~TradeQuantity,
-               kg = ~NetWeight,
+              kg = ~NetWeight,
                flow = ~rgCode,
                flowdesc = ~rgDesc,
                value = ~TradeValue,
@@ -79,7 +79,12 @@ getunct <- function(area, year, partner = "all",
 #' Convert data extracted from UN Comtrade API to FAOSTAT format.
 #' @import dplyr
 #' @export
-uncttofao <- function(data) {
+uncttofao <- function(data, 
+                      long = T,
+                      faonames = T,
+                      quantity = F, 
+                      netweight = F) {
+  if(quantity | netweight) stop("Quantity and netweight are not implemented.")
   if(!("qtdesc" %in% names(data))) {
     stop(paste("No description of quantity in data.", 
                "Please, retrieve data by getunct() with desc=T argument.",
@@ -87,15 +92,19 @@ uncttofao <- function(data) {
   }
   data <- data %>%
     mutate_(group = ~hsgroup(hs)) %>%
-    filter_(~(qtdesc == "Weight in kilograms" & # Suppose food in kg only (also litres)
-             !is.na(group))) %>% # Drop all HS which not in conversion table
-    group_by_(~flow, ~year, ~area, ~pt, ~group) %>%
+    filter_(~(#qtdesc == "Weight in kilograms" & # Suppose food in kg only (also litres)
+      !is.na(group))) # Drop all HS which not in conversion table
+  
+  group_by_(~flow, ~year, ~area, ~pt, ~group, ~qtdesc) %>%
     summarize_(ctvalue = ~sum(value),
                ctkg = ~sum(kg),
                ctqt = ~sum(qt)) %>%
     ungroup() %>%
     mutate_(area = ~faoarea(area),
-            pt = ~faoarea(pt))
+            pt = ~faoarea(pt),
+            ctvalue = ~round(ctvalue / 1000), # to 1000 USD
+            ctqt = ~round(ctqt / 1000),  # to tonnes
+            ctkg = ~round(ctkg / 1000)) # to tonnes
   data
 }
 

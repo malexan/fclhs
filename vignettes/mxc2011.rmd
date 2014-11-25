@@ -139,7 +139,7 @@ t %>%
 ```{r}
 
 mxcfao3 <- read.table(system.file("extdata", 
-                                  "mxc_2011_2007_all_all.csv", 
+                                  "mxc_2011_2007_all_all.csv.gz", 
                                   package = "fclhs"), 
                       header = T,
                       sep = ',', stringsAsFactors = F,
@@ -158,5 +158,29 @@ No limits in FAOsAT3 gui.
 
 ```{r}
 d <- uncttofao(mxcus)
+d %>% filter(stringr::str_detect(qtdesc, "items"))
+
+hsingroup(674)
+fclingroup(674)
+table(d$qtdesc)
+
 ```
 
+Numb of uniq qtdesc in groups
+```{r}
+plyr::ddply(.data = d, .variables = ~group, function(x) {
+  length(unique(x$qtdesc))}) %>%
+  filter(V1 > 1)
+
+plyr::dlply(.data = d, .variables = ~group, function(x) {
+  unique(x$qtdesc)}) 
+
+d %>%
+  group_by(group) %>%
+  mutate(units = length(unique(qtdesc))) %>%
+  ungroup() %>%
+  filter(units > 1) %>%
+  arrange(desc(units)) %>%
+  select(-year, -area, -pt)
+```
+1 group with 3 different units. 8 with 2.
