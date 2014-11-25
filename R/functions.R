@@ -50,10 +50,15 @@ areas2 <- function(area, to) {
 #' Convert UN ComTrade country codeinto corresponding FAO area code.
 #' @export
 faoarea <- function(unct) {
+  # TODO: Add China aggregation
   areas2(unct, "fao")
 }
 
 #' Convert FAO area code into corresponding UN ComTrade country code.
+#' 
+#' @section Waring:
+#' It doesn't aggregate China's parts.
+#' 
 #' @export
 unctarea <- function(fao) {
   areas2(fao, "unct")
