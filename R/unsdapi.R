@@ -38,7 +38,8 @@ getunct <- function(area, year, partner = "all",
                 max = 50000,
                 head = "M" # Machine readable instead of Human readable
   )
-  # Check access limit
+  # Check API access limit (No more than 1 per second).
+  # Good to add 100 requests per day.
   if(!exists(".lastUNSDAPIaccess")) .lastUNSDAPIaccess <<- lubridate::now()
   if(exists(".lastUNSDAPIaccess")) {
     if(ymd_hms(.lastUNSDAPIaccess) + seconds(1) > ymd_hms(now())) {
@@ -64,7 +65,8 @@ getunct <- function(area, year, partner = "all",
                hs = ~cmdCode, 
                area = ~rtCode,
                pt = ~ptCode,
-               qt = ~TradeQuantity, # NetWeight exists also!!!
+               qt = ~TradeQuantity,
+               kg = ~NetWeight,
                flow = ~rgCode,
                flowdesc = ~rgDesc,
                value = ~TradeValue,
@@ -74,21 +76,26 @@ getunct <- function(area, year, partner = "all",
   select_(d,  lazyeval::interp(~-ends_with(x), x = "desc"))
 }
 
-
-
-getunsdfao <- function(area, year, partner, 
-                       flow = "all", code, ...) {
-  area <- unctarea(area)
-  partner <- unctarea(partner)
-  code <- fcl2hs(code)
-  d <- getunct(area = area,
-               year = year,
-               partner = partner,
-               flow = flow,
-               code = code,
-               ...)
-  d
-  #   d %>%
-  #     mutate(fcl 
+#' Convert data extracted from UN Comtrade API to FAOSTAT format.
+#' @import dplyr
+#' @export
+uncttofao <- function(data) {
+  if(!("qtdesc" %in% names(data))) {
+    stop(paste("No description of quantity in data.", 
+               "Please, retrieve data by getunct() with desc=T argument.",
+               sep = "\n"))
+  }
+  data <- data %>%
+    mutate_(group = ~hsgroup(hs)) %>%
+    filter_(~(qtdesc == "Weight in kilograms" & # Suppose food in kg only (also litres)
+             !is.na(group))) %>% # Drop all HS which not in conversion table
+    group_by_(~flow, ~year, ~area, ~pt, ~group) %>%
+    summarize_(ctvalue = ~sum(value),
+               ctkg = ~sum(kg),
+               ctqt = ~sum(qt)) %>%
+    ungroup() %>%
+    mutate_(area = ~faoarea(area),
+            pt = ~faoarea(pt))
+  data
 }
 

@@ -61,7 +61,7 @@ t0 <- mxcfao3 %>%
 ```
 
 ```{r get1unsd}
-mxcus <- getunsd(area = unctarea(138),
+mxcus <- getunct(area = unctarea(138),
                  year = 2011,
                  partner = 842, #USA
                  desc = T)
@@ -153,3 +153,10 @@ table(mxcfao3$Element.Code, mxcfao3$Element)
 ```
 
 No limits in FAOsAT3 gui. 
+
+# 11/25/2014
+
+```{r}
+d <- uncttofao(mxcus)
+```
+

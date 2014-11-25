@@ -8,4 +8,8 @@ unctarea(fao)
 \description{
 Convert FAO area code into corresponding UN ComTrade country code.
 }
+\section{Waring}{
+
+It doesn't aggregate China's parts.
+}
 
