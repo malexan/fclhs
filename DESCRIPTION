@@ -10,4 +10,5 @@ LazyData: true
 Imports:
     lubridate,
     dplyr,
-    countrycode
+    countrycode,
+    httr
