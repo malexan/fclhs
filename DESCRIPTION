@@ -8,4 +8,6 @@ Depends:
 License: What license is it under?
 LazyData: true
 Imports:
-    lubridate
+    lubridate,
+    dplyr,
+    countrycode
