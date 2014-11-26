@@ -93,9 +93,8 @@ uncttofao <- function(data,
   data <- data %>%
     mutate_(group = ~hsgroup(hs)) %>%
     filter_(~(#qtdesc == "Weight in kilograms" & # Suppose food in kg only (also litres)
-      !is.na(group))) # Drop all HS which not in conversion table
-  
-  group_by_(~flow, ~year, ~area, ~pt, ~group, ~qtdesc) %>%
+      !is.na(group)))  %>%# Drop all HS which not in conversion table
+    group_by_(~flow, ~year, ~area, ~pt, ~group, ~qtdesc) %>%
     summarize_(ctvalue = ~sum(value),
                ctkg = ~sum(kg),
                ctqt = ~sum(qt)) %>%
