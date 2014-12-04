@@ -1,0 +1,12 @@
+---
+title: "Comparable data format"
+author: "Alexander Matrunich"
+date: "12/05/2014"
+output: html_document
+---
+
+# Comparison of trading values
+
+## Initial point
+
+Finally we want to compare measured variables (USD, net weight, etc.) where all identity variables are brought to a common standard.
