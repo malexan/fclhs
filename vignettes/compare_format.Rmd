@@ -9,4 +9,39 @@ output: html_document
 
 ## Initial point
 
-Finally we want to compare measured variables (USD, net weight, etc.) where all identity variables are brought to a common standard.
+Finally we want to compare measured variables (USD, net weight, etc.) where all identity variables (units, countrycodes) are brought to a common standard.
+
+While we are not sure that all conversion details are taken into account, it's better to have information about all id variables from both parties at hand.
+
+Data downloaded from FAOSTAT3 has following structure:
+```{r faostat3_format, echo=FALSE}
+library(fclhs)
+mxcfao3 <- read.table(system.file("extdata", 
+                                  "mxc_2011_2007_all_all.csv.gz", 
+                                  package = "fclhs"), 
+                      header = T,
+                      sep = ',', stringsAsFactors = F,
+                      nrows = 63582 # drop final line with timestamp
+                      )
+str(mxcfao3, vec.len = 1)
+```
+
+Data gathered with UN Comtrade API is:
+
+```{r comtrade_format, echo=FALSE}
+mxcus <- getunct(area = unctarea(138),
+                 year = 2011,
+                 partner = 842, #USA
+                 desc = T,
+                 compact = F)
+str(mxcus, vec.len = 1)
+```
+
+Id variables we need to take into account:
+
+* Country
+* Measurement units
+* Flow / elements
+* Items / commodities
+* Flags (for analysis)
+* Year
