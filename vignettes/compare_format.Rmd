@@ -47,3 +47,5 @@ Id variables we need to take into account:
 * Year
 
 Currently we compare mutually exclusive groups of interconnected items from FCL and HS2007 sets. For manual checkings we need a way of instant getting of information about items included in group and description of them.
+
+Checks about compatibility have to be done before merging into groups.
