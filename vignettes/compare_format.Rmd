@@ -14,7 +14,10 @@ Finally we want to compare measured variables (USD, net weight, etc.) where all 
 While we are not sure that all conversion details are taken into account, it's better to have information about all id variables from both parties at hand.
 
 Data downloaded from FAOSTAT3 has following structure:
-```{r faostat3_format, echo=FALSE}
+```{r faostat3_format, echo=FALSE, message=FALSE}
+library(dplyr)
+library(reshape2)
+library(stringr)
 library(fclhs)
 mxcfao3 <- read.table(system.file("extdata", 
                                   "mxc_2011_2007_all_all.csv.gz", 
@@ -25,6 +28,7 @@ mxcfao3 <- read.table(system.file("extdata",
                       )
 str(mxcfao3, vec.len = 1)
 ```
+
 
 Data gathered with UN Comtrade API is:
 
@@ -39,13 +43,74 @@ str(mxcus, vec.len = 1)
 
 Id variables we need to take into account:
 
-* Country
+* Countries
 * Measurement units
 * Flow / elements
 * Items / commodities
 * Flags (for analysis)
 * Year
 
+FAOSTAT3 data after dropping unused variables:
+```{r faostat3_dropped, echo=FALSE}
+mxcfao3 <- mxcfao3 %>%
+  select(area  = Reporter.Country.Code,
+         pt    = Partner.Country.Code,
+         el    = Element,
+         fcl   = Item.Code,
+         year  = Year,
+         unit  = Unit,
+         value = Value)
+
+head(mxcfao3)
+```
+
+In FAO data trade value ($1000 USD) and quantity are stored in one column (long, normalized format). We've decided to move cost (USD) to an additional column as cost has 
+different nature than quantity.
+```{r faostat_units_elements, echo=FALSE}
+table(mxcfao3$unit, mxcfao3$el)
+```
+
+Cost is stored in elements named Export Value and Import Value, in unit 1000 US$. We'll use unit variable for separation of cost and quantity values, and element variable for detection of flow (Import / Export).
+
+```{r faostat_normalized, echo=FALSE}
+mxcfao3 <- mxcfao3 %>%
+  mutate(flow = str_extract(el, "^.{6}"), #Import/Export - first 6 symbols of el
+         type = ifelse(str_detect(unit, "1000 US\\$"), "value", "quan")) %>%
+  select(-el)
+
+mxcfao3_quan <- mxcfao3 %>%
+  filter(type == "quan") %>%
+  rename(quan = value) %>%
+  select(-type)
+
+mxcfao3_value <- mxcfao3 %>%
+  filter(type == "value") %>%
+  select(-unit, -type)
+
+mxcfao3 <- mxcfao3_quan %>%
+  inner_join(mxcfao3_value, by = c("area", "pt", "fcl", "year", "flow"))
+
+head(mxcfao3)
+```
+
+
+
+```{r uncomtrade_dropped, echo=FALSE}
+mxcus <- mxcus %>%
+  select(areact  = rtCode,
+         ptct    = ptCode,
+         flowct  = rgDesc,
+         hs      = cmdCode,
+         year    = yr,
+         unitct  = qtDesc,
+         quanct  = TradeQuantity,
+         valuect = TradeValue)
+
+head(mxcus)
+```
+
+
 Currently we compare mutually exclusive groups of interconnected items from FCL and HS2007 sets. For manual checkings we need a way of instant getting of information about items included in group and description of them.
 
-Checks about compatibility have to be done before merging into groups.
+Checks on compatibility of items from different classifications have to be done before merging them into groups because we lose all individual information after merging.
+

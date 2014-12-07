@@ -155,9 +155,35 @@ hsgroup <- function(hs) {
 #' @param debug. Logical. 
 #' 
 #' @import dplyr
+#' @import stringr
 #' @export
 getfao <- function(area, year, partner, 
-                    flow = "all", compact = T,
-                    desc = F, data, debug = F) {
+                   flow = "all", compact = T,
+                   desc = F, data, debug = F) {
+  data <- data %>%
+    select_(area  = ~Reporter.Country.Code,
+            pt    = ~Partner.Country.Code,
+            el    = ~Element,
+            fcl   = ~Item.Code,
+            year  = ~Year,
+            unit  = ~Unit,
+            value = ~Value) %>%
+    mutate_(flow  = ~str_extract(el, "^.{6}"), #Import/Export - first 6 symbols of el
+           type   = ~ifelse(str_detect(unit, "1000 US\\$"), "value", "quan")) %>%
+    select_(~-el)
   
+  data_quan <- data %>%
+    filter_(~type == "quan") %>%
+    rename_(quan = ~value) %>%
+    select_(quote(-type))
+  
+  data_value <- data %>%
+    filter_(~type == "value") %>%
+    select_(quote(-unit), quote(-type))
+  
+  data <- data_quan %>%
+    inner_join(data_value, by = c("area", "pt", "fcl", "year", "flow"))
+  
+  data %>%
+    arrange_(~year, ~area, ~pt, ~flow, ~fcl)
 }
