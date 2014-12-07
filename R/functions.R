@@ -160,6 +160,26 @@ hsgroup <- function(hs) {
 getfao <- function(area, year, partner, 
                    flow = "all", compact = T,
                    desc = F, data, debug = F) {
+
+  if(missing(area) | missing(year)) stop("area or year parameters are not provided")
+  
+  if(flow != "all") {
+    data <- data %>%
+      filter_(~str_detect(Element, flow))
+  }
+
+  if(!missing(partner)) {
+    data <- data %>%
+      filter_(~Partner.Country.Code  == partner)
+  }
+    
+  data <- data %>%
+    filter_(~Reporter.Country.Code == area,
+            ~Year                  == year)
+  
+  if(nrow(data) ==0) return(data.frame())
+            
+  
   data <- data %>%
     select_(area  = ~Reporter.Country.Code,
             pt    = ~Partner.Country.Code,
@@ -184,6 +204,5 @@ getfao <- function(area, year, partner,
   data <- data_quan %>%
     inner_join(data_value, by = c("area", "pt", "fcl", "year", "flow"))
   
-  data %>%
-    arrange_(~year, ~area, ~pt, ~flow, ~fcl)
+
 }
