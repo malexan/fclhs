@@ -157,7 +157,7 @@ hsgroup <- function(hs) {
 #' @import dplyr
 #' @import stringr
 #' @export
-getfao <- function(area, year, partner, 
+convertfao3 <- function(area, year, partner, 
                    flow = "all", compact = T,
                    desc = F, data, debug = F) {
 
@@ -204,5 +204,5 @@ getfao <- function(area, year, partner,
   data <- data_quan %>%
     inner_join(data_value, by = c("area", "pt", "fcl", "year", "flow"))
   
-
+  data
 }
