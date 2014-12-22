@@ -150,12 +150,14 @@ hsgroup <- function(hs) {
 #' @param partner Numeric. Codes of partner countries from FAO classification.
 #'   All if omitted.
 #' @param flow. Numeric. 1 - Import, 2 - Export. Both if omitted.
+#' @param weightonly. Drop all except measured in tonnes. TRUE by default.
 #' 
 #' @import dplyr
 #' @import stringr
 #' @export
+
 convertfao3 <- function(data, area, year, partner, 
-                        flow = "all") {
+                        flow = "all", weightonly = T) {
 
   if(missing(area) | missing(year)) stop("area or year parameters are not provided")
   
@@ -200,9 +202,11 @@ convertfao3 <- function(data, area, year, partner,
   data <- data_quan %>%
     inner_join(data_value, by = c("area", "pt", "fcl", "year", "flow"))
   
+  if(weightonly) data <- data %>%
+    filter_(~unit == "tonnes")
+  
   data
 }
-
 
 #' Convert dataset gathered from UNCT API to comparable form.
 #' 
@@ -213,11 +217,12 @@ convertfao3 <- function(data, area, year, partner,
 #' @param partner Numeric. Codes of partner countries from UNCT classification.
 #'   All if omitted.
 #' @param flow. Numeric. 1 - Import, 2 - Export. Both if omitted.
+#' @param weightonly. Drop all except measured in kg. TRUE by default.
 #'
 #' @import dplyr
 #' @export
 convertunctapi <- function(data, area, year, partner, 
-                           flow = "all") {
+                           flow = "all", weightonly = T) {
   if(any(!(c("rtCode", "ptCode", "rgDesc", "cmdCode", "yr",
              "qtDesc", "TradeQuantity", "TradeValue") %in% names(data)))) {
     stop("Unsupported data. Use getunct() with compact=F to get correct data.")
@@ -235,7 +240,7 @@ convertunctapi <- function(data, area, year, partner,
   if(flow != "all") data <- data %>%
     filter_(~rgDesc == flow)
       
-  data %>%
+  data <- data %>%
     select_(areact = ~rtCode,
            ptct    = ~ptCode,
            flowct  = ~rgDesc,
@@ -245,4 +250,10 @@ convertunctapi <- function(data, area, year, partner,
            quanct  = ~TradeQuantity,
            valuect = ~TradeValue)
   
+  if(weightonly) data <- data %>%
+    filter_(~unitct == "Weight in kilograms")
+  
+  data
 }
+
+

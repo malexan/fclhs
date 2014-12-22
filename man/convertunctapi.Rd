@@ -4,7 +4,7 @@
 \alias{convertunctapi}
 \title{Convert dataset gathered from UNCT API to comparable form.}
 \usage{
-convertunctapi(data, area, year, partner, flow = "all")
+convertunctapi(data, area, year, partner, flow = "all", weightonly = T)
 }
 \arguments{
 \item{area}{Numeric. Codes of reporter countries from UNCT classification.
@@ -18,6 +18,8 @@ All if omitted.}
 \item{data.}{Data frame returned from call getunct() with compact = F}
 
 \item{flow.}{Numeric. 1 - Import, 2 - Export. Both if omitted.}
+
+\item{weightonly.}{Drop all except measured in kg. TRUE by default.}
 }
 \description{
 Convert dataset gathered from UNCT API to comparable form.

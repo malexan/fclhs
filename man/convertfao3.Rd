@@ -4,7 +4,7 @@
 \alias{convertfao3}
 \title{Extract particular datasets from FAOSTAT3 data.}
 \usage{
-convertfao3(data, area, year, partner, flow = "all")
+convertfao3(data, area, year, partner, flow = "all", weightonly = T)
 }
 \arguments{
 \item{area}{Numeric. Codes of reporter countries from FAO classification.}
@@ -18,6 +18,8 @@ All if omitted.}
 from faostat3.fao.org.}
 
 \item{flow.}{Numeric. 1 - Import, 2 - Export. Both if omitted.}
+
+\item{weightonly.}{Drop all except measured in tonnes. TRUE by default.}
 }
 \description{
 Extract particular datasets from FAOSTAT3 data.
