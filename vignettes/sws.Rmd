@@ -1,0 +1,49 @@
+---
+title: "R SWS"
+author: "Alexander Matrunich"
+date: "12/10/2014"
+output: html_document
+---
+
+http://hqlqasws1.hq.un.fao.org:8080/sws/
+From Nick: 16cc5aef-7b7f-43dd-af94-1660759ddd19
+My first: 3870d0bb-2a46-4525-ba44-d9d246ecf502
+By example from Nick: 8b9583d7-c691-4239-8ded-432a85e1ffae
+
+```{r loadfaosws}
+library(faosws)
+```
+
+```{r}
+GetTestEnvironment(
+"https://hqlqasws1.hq.un.fao.org:8181/sws",
+"8b9583d7-c691-4239-8ded-432a85e1ffae")
+```
+
+```{r}
+library(RCurl)
+url <- "https://hqlqasws1.hq.un.fao.org:8181/sws/rest/r/computationParameters/3870d0bb-2a46-4525-ba44-d9d246ecf502"
+ch <- getCurlHandle()
+response <- getURL(url = url, curl = ch, verbose = TRUE, 
+                   noproxy = TRUE, ssl.verifypeer = FALSE, 
+                   sslcert = "/home/sas/.R/client.crt", 
+                   sslkey = "/home/sas/.R/client.key", ssl.verifyhost = 2, 
+                   httpheader = c(Accept = "application/json", `Content-Type` = "application/json"))
+```
+
+```{r}
+data <- GetData(
+key = swsContext.datasets[[1]],
+flags = TRUE, normalized = TRUE)
+print(data)
+```
+
+
+https://github.com/mkao006/sws_trade/blob/master/tests/get_trade_data.R
+
+```{r}
+allReportingCountryCode =
+    GetCodeList("trade", "ct_raw_tf", dimension = "reportingCountryM49")$code
+
+```
+
