@@ -143,23 +143,19 @@ hsgroup <- function(hs) {
 
 #' Extract particular datasets from FAOSTAT3 data.
 #' 
+#' @param data. Data frame to take original data from. It should be downloaded 
+#'   from faostat3.fao.org.
 #' @param area Numeric. Codes of reporter countries from FAO classification.
 #' @param year Numeric. Reported year.
 #' @param partner Numeric. Codes of partner countries from FAO classification.
 #'   All if omitted.
 #' @param flow. Numeric. 1 - Import, 2 - Export. Both if omitted.
-#' @param compact. Logical. Should column names be standardized. TRUE by default.
-#' @param desc. Logical. Should columns with descriptions be included. 
-#'   FALSE by default.
-#' @param data. Data frame to take original data from.
-#' @param debug. Logical. 
 #' 
 #' @import dplyr
 #' @import stringr
 #' @export
-convertfao3 <- function(area, year, partner, 
-                   flow = "all", compact = T,
-                   desc = F, data, debug = F) {
+convertfao3 <- function(data, area, year, partner, 
+                        flow = "all") {
 
   if(missing(area) | missing(year)) stop("area or year parameters are not provided")
   
@@ -205,4 +201,48 @@ convertfao3 <- function(area, year, partner,
     inner_join(data_value, by = c("area", "pt", "fcl", "year", "flow"))
   
   data
+}
+
+
+#' Convert dataset gathered from UNCT API to comparable form.
+#' 
+#' @param data. Data frame returned from call getunct() with compact = F
+#' @param area Numeric. Codes of reporter countries from UNCT classification.
+#'  All if omitted.
+#' @param year Numeric. Reported year. All if omitted.
+#' @param partner Numeric. Codes of partner countries from UNCT classification.
+#'   All if omitted.
+#' @param flow. Numeric. 1 - Import, 2 - Export. Both if omitted.
+#'
+#' @import dplyr
+#' @export
+convertunctapi <- function(data, area, year, partner, 
+                           flow = "all") {
+  if(any(!(c("rtCode", "ptCode", "rgDesc", "cmdCode", "yr",
+             "qtDesc", "TradeQuantity", "TradeValue") %in% names(data)))) {
+    stop("Unsupported data. Use getunct() with compact=F to get correct data.")
+  }
+  
+  if(!missing(area)) data <- data %>%
+    filter_(~rtCode == area)
+  
+  if(!missing(year)) data <- data %>%
+    filter_(~yr == year)
+  
+  if(!missing(partner)) data <- data %>%
+    filter_(~ptCode == partner)
+  
+  if(flow != "all") data <- data %>%
+    filter_(~rgDesc == flow)
+      
+  data %>%
+    select_(areact = ~rtCode,
+           ptct    = ~ptCode,
+           flowct  = ~rgDesc,
+           hs      = ~cmdCode,
+           year    = ~yr,
+           unitct  = ~qtDesc,
+           quanct  = ~TradeQuantity,
+           valuect = ~TradeValue)
+  
 }

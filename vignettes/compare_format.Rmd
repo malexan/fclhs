@@ -126,3 +126,13 @@ Currently we compare mutually exclusive groups of interconnected items from FCL 
 
 Checks on compatibility of items from different classifications have to be done before merging them into groups because we lose all individual information after merging.
 
+## 22 Dec 2014
+
+```{r}
+mxcus <- getunct(area = unctarea(138),
+                 year = 2011,
+                 partner = 842, #USA
+                 compact = F) %>%
+  convertunctapi()
+```
+
