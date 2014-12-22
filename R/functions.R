@@ -257,3 +257,46 @@ convertunctapi <- function(data, area, year, partner,
 }
 
 
+#' Function to join dataframes with FAO and UN CT data.
+#' 
+#' @param faodata. Data frame returned by convertfao3()
+#' @param ctdata. Data frame returned by convertunctapi()
+#'
+#' @import dplyr
+#' @export
+joincompared <- function(faodata, ctdata) {
+  if(any(faodata$unit != "tonnes"))
+    stop("Items other than weight in tonnes are not supported in FAO data")
+
+  if(any(ctdata$unit != "Weight in kilograms"))
+    stop("Items other than weight in kilograms are not supported in UN CT data")
+  
+  faodata <- faodata %>%
+    mutate_(group = ~fclgroup(fcl)) %>%
+    group_by_(~area, ~pt, ~year, ~flow, ~group, ~unit) %>%
+    summarize_(quan =  ~sum(quan),
+              value = ~sum(value)) %>%
+    ungroup()
+  
+  ctdata <- ctdata %>%
+    mutate_(area    = ~faoarea(areact),
+            pt      = ~faoarea(ptct),
+            flow    = ~flowct,
+            quanct  = ~round(quanct / 1000),
+            valuect = ~round(valuect / 1000),
+            unit    = ~ifelse(unitct == "Weight in kilograms", 
+                              "tonnes", NA),
+            group   = ~hsgroup(hs)) %>%
+    group_by_(~area, ~pt, ~year, ~flow, ~group, ~unit) %>%
+    summarize_(quanct  = ~sum(quanct),
+               valuect = ~sum(valuect)) %>%
+    ungroup()
+  
+  data <- inner_join(faodata, ctdata, 
+                     by = c("area", "pt", "year", "flow", "group", "unit")) %>%
+    mutate_(qdiff = ~(quan - quanct),
+            vdiff = ~(value - valuect))
+  
+  data
+  
+}

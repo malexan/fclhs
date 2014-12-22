@@ -153,4 +153,8 @@ It's time to compare!
 table(mxcus$unitct)
 table(mxcfao3$unit)
 ```
+```{r}
+head(joincompared(mxcfao3, mxcus))
+```
+
 
