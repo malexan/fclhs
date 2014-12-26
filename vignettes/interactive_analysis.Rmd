@@ -1,0 +1,27 @@
+---
+title: "Shiny app"
+author: "Alexander Matrunich"
+date: "12/26/2014"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+mxcusact <- getunct(area = unctarea(138),
+                 year = 2011,
+                 partner = 842, #USA
+                 compact = F) %>%
+  convertunctapi()
+
+mxcfao3 <- read.table(system.file("extdata", 
+                                  "mxc_2011_2007_all_all.csv.gz", 
+                                  package = "fclhs"), 
+                      header = T,
+                      sep = ',', stringsAsFactors = F,
+                      nrows = 63582 # drop final line with timestamp
+                      ) %>%
+  convertfao3(area = 138, year = 2011)
+
+data <- joincompared(mxcfao3, mxcusact)
+```
+
