@@ -22,7 +22,8 @@ barchart <- function() {
                                    "Value ($1000)" = "vdiff")),
                      sliderInput("rws", "Groups to display",
                                  1, 100, 50)),
-        mainPanel(ggvisOutput("hist1"))
+        mainPanel(ggvisOutput("hist1"),
+                  dataTableOutput("data"))
       )
     ), 
     server = function(input, output) {
@@ -44,6 +45,8 @@ barchart <- function() {
         arrange_(paste0("desc(", input$vrbl, ")")) %>%
         top_n(input$rws)
       )
+      
+      output$data <- renderDataTable(data())
 
       reactive({faithful %>% ggvis(~waiting)  %>%
         layer_histograms(width = input$w) }) %>%
