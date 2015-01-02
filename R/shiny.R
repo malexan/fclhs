@@ -43,7 +43,7 @@ barchart <- function() {
                              compact = F) %>%
                        convertunctapi()) %>% 
         arrange_(paste0("desc(", input$vrbl, ")")) %>%
-        top_n(input$rws)
+        top_n(input$rws, qdiff)
       )
       
       output$data <- renderDataTable(data())
