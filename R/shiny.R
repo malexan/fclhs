@@ -39,7 +39,7 @@ barchart <- function() {
                     year = input$year) %>%
         joincompared(getunct(area = unctarea(input$reporter),
                              year = input$year,
-                             partner = unctarea(input$reporter), 
+                             partner = unctarea(input$pt), 
                              compact = F) %>%
                        convertunctapi()) %>% 
         arrange_(paste0("desc(", input$vrbl, ")")) %>%
