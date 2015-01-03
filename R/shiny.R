@@ -21,8 +21,8 @@ barchart <- function() {
                                  c("Quantity (tonnes)" = "qdiff",
                                    "Value ($1000)" = "vdiff")),
                      sliderInput("rws", "Groups to display",
-                                 1, 100, 50)),
-        mainPanel(ggvisOutput("hist1"),
+                                 1, 100, 10)),
+        mainPanel(ggvisOutput("bar1"),
                   dataTableOutput("data"))
       )
     ), 
@@ -47,10 +47,13 @@ barchart <- function() {
       )
       
       output$data <- renderDataTable(data())
-
-      reactive({faithful %>% ggvis(~waiting)  %>%
-        layer_histograms(width = input$w) }) %>%
-        bind_shiny("hist1")
+  
+      reactive({
+        data() %>%
+          ggvis(~factor(group), ~qdiff) %>%
+          layer_bars()
+      }) %>%
+        bind_shiny("bar1")
     }
   )
   
