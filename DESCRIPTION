@@ -8,4 +8,8 @@ Depends:
 License: What license is it under?
 LazyData: true
 Imports:
-    lubridate
+    dplyr,
+    ggvis,
+    shiny,
+    lubridate,
+    stringr
