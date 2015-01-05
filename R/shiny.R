@@ -27,7 +27,7 @@ barchart <- function() {
       )
     ), 
     server = function(input, output) {
-      data <- reactive(read.table(system.file("extdata", 
+      fulldata <- reactive({read.table(system.file("extdata", 
                                             "mxc_2011_2007_all_all.csv.gz", 
                                             package = "fclhs"), 
                                 header = T,
@@ -41,19 +41,28 @@ barchart <- function() {
                              year = input$year,
                              partner = unctarea(input$pt), 
                              compact = F) %>%
-                       convertunctapi()) %>% 
-        arrange_(paste0("desc(", input$vrbl, ")")) %>%
-        top_n(input$rws, qdiff)
-      )
+                       convertunctapi())
+      })
+      
+      data <- reactive({fulldata() %>%
+                          mutate_(inpt = input$vrbl) %>%
+                          arrange_(paste0("desc(", input$vrbl, ")")) %>%
+                          top_n(input$rws) # , input$vrbl)
+                        })
       
       output$data <- renderDataTable(data())
-  
-      reactive({
-        data() %>%
-          ggvis(~factor(group), ~qdiff) %>%
-          layer_bars()
-      }) %>%
+      
+      data %>%
+        mutate(group = factor(group)) %>%
+        group_by(flow) %>% # Workaroud with bug in layer_bars()
+        ggvis(~group, ~qdiff) %>%
+        layer_bars(fill = ~flow, stack = T) %>% # No option in ggvis 
+                                                # to plot dodged bars
+        add_axis("x", title = "Commodities group IDs") %>%
+        add_axis("y", title = "Difference between FAO and UN Comtrade",
+                 title_offset = 50) %>%
         bind_shiny("bar1")
+  
     }
   )
   
