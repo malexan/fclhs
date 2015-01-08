@@ -12,12 +12,13 @@ By example from Nick: 8b9583d7-c691-4239-8ded-432a85e1ffae
 
 ```{r loadfaosws}
 library(faosws)
+library(faoswsUtil)
 ```
 
 ```{r}
 GetTestEnvironment(
 "https://hqlqasws1.hq.un.fao.org:8181/sws",
-"8b9583d7-c691-4239-8ded-432a85e1ffae")
+"3870d0bb-2a46-4525-ba44-d9d246ecf502")
 ```
 
 ```{r}
@@ -42,8 +43,48 @@ print(data)
 https://github.com/mkao006/sws_trade/blob/master/tests/get_trade_data.R
 
 ```{r}
+reportingCountryVar = "reportingCountryM49"
+partnerCountryVar = "partnerCountryM49"
+yearVar = "timePointYears"
+itemVar = "measuredItemHS"
+elementVar = "measuredElementTrade"
+valuePrefix = "Value_"
+flagPrefix = "flagTrade_"
+## flagObsPrefix = "flagObservationStatus_"
+## flagMethodPrefix = "flagMethod_"
+reverseTradePrefix = "reverse_"
+
 allReportingCountryCode =
     GetCodeList("trade", "ct_raw_tf", dimension = "reportingCountryM49")$code
 
+codetree <- GetCodeTree("trade", "ct_raw_tf", dimension = itemVar)
+
+cerealItemCode <- adjacent2edge(codetree)[parent == "10", children]
+
+dms <- list(Dimension(name = "reportingCountryM49",
+                      keys = "484"),
+            Dimension(name = "partnerCountryM49",
+                      keys = "842"),
+            Dimension(name = "measuredItemHS",
+                      keys = "010110"),
+            Dimension(name = "measuredElementTrade",
+                      keys = "5621"),
+            Dimension(name = "timePointYears", 
+                      keys = "2011"))
+
+k <- DatasetKey(domain     = "trade",
+                dataset    = "ct_raw_tf",
+                dimensions = dms)
+
+d <- GetData(key = k,
+             normalized = FALSE, 
+             pivoting = c(Pivoting(code = "reportingCountryM49"),
+                          Pivoting(code = "partnerCountryM49"),
+                          Pivoting(code = "measuredItemHS"),
+                          Pivoting(code = "timePointYears"),
+                          Pivoting(code = "measuredElementTrade")
+                          ))
+
+             
 ```
 

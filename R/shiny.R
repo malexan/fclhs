@@ -10,18 +10,19 @@ barchart <- function() {
   shinyApp(
     ui = fluidPage(
       sidebarLayout(
-        sidebarPanel(sliderInput("w", "Bin width", 1, 20, 10),
-                     sliderInput("year", "Year", 2007, 2011, 2011,
+        sidebarPanel(
+                     sliderInput("year", "Year of report", 2007, 2011, 2011,
                                  format = "####"),
                      selectInput("reporter", "Reporter", 
                                  c("Mexico" = 138)),
-                     selectInput("pt", "Partner", 
+                     selectInput("pt", "Trade partner", 
                                  c("USA" = 231)),
-                     selectInput("vrbl", "Quantity/Value",
+                     selectInput("vrbl", "Quantity or value",
                                  c("Quantity (tonnes)" = "qdiff",
                                    "Value ($1000)" = "vdiff")),
                      sliderInput("rws", "Groups to display",
-                                 1, 100, 10)),
+                                 1, 20, 10),
+                     sliderInput("w", "Bin width", .1, 1, .9)),
         mainPanel(ggvisOutput("bar1"),
                   dataTableOutput("data"))
       )
@@ -47,22 +48,24 @@ barchart <- function() {
       data <- reactive({fulldata() %>%
                           mutate_(inpt = input$vrbl) %>%
                           arrange_(paste0("desc(", input$vrbl, ")")) %>%
-                          top_n(input$rws) # , input$vrbl)
+                          top_n(n = input$rws, wt = qdiff) # , input$vrbl)
                         })
       
       output$data <- renderDataTable(data())
       
-      data %>%
-        mutate(group = factor(group)) %>%
-        group_by(flow) %>% # Workaroud with bug in layer_bars()
-        ggvis(~group, ~qdiff) %>%
-        layer_bars(fill = ~flow, stack = T) %>% # No option in ggvis 
-                                                # to plot dodged bars
-        add_axis("x", title = "Commodities group IDs") %>%
-        add_axis("y", title = "Difference between FAO and UN Comtrade",
-                 title_offset = 50) %>%
+      reactive({
+        data() %>%
+          mutate(group = factor(group)) %>%
+          group_by(flow) %>% # Workaroud with bug in layer_bars()
+          ggvis(~group, ~qdiff) %>%
+          layer_bars(fill = ~flow, stack = T, width = input$w) %>% # No option in ggvis 
+          # to plot dodged bars
+          add_axis("x", title = "Commodities group IDs") %>%
+          add_axis("y", title = "Difference between FAO and UN Comtrade",
+                   title_offset = 50)
+      }) %>%
         bind_shiny("bar1")
-  
+      
     }
   )
   
