@@ -55,36 +55,51 @@ flagPrefix = "flagTrade_"
 reverseTradePrefix = "reverse_"
 
 allReportingCountryCode =
-    GetCodeList("trade", "ct_raw_tf", dimension = "reportingCountryM49")$code
+    GetCodeList(dmn, dtset, dimension = "reportingCountryM49")
 
-codetree <- GetCodeTree("trade", "ct_raw_tf", dimension = itemVar)
+itemstree <- GetCodeTree(dmn, dtset, dimension = itmvar)
+itemslist <- GetCodeList(dmn, dtset, dimension = itmvar)
+
 
 cerealItemCode <- adjacent2edge(codetree)[parent == "10", children]
 
-dms <- list(Dimension(name = "reportingCountryM49",
+dmn    <- "trade"
+dtset  <- "ct_raw_tf"
+rtvar  <- "reportingCountryM49"
+ptvar  <- "partnerCountryM49"
+itmvar <- "measuredItemHS"
+elevar <- "measuredElementTrade"
+yrvar  <- "timePointYears"
+
+dms <- list(Dimension(name = rtvar,
                       keys = "484"),
-            Dimension(name = "partnerCountryM49",
+            Dimension(name = ptvar,
                       keys = "842"),
-            Dimension(name = "measuredItemHS",
+            Dimension(name = itmvar,
                       keys = "010110"),
-            Dimension(name = "measuredElementTrade",
+            Dimension(name = elevar,
                       keys = "5621"),
-            Dimension(name = "timePointYears", 
+            Dimension(name = yrvar, 
                       keys = "2011"))
 
-k <- DatasetKey(domain     = "trade",
-                dataset    = "ct_raw_tf",
+k <- DatasetKey(domain     = dmn,
+                dataset    = dtset,
                 dimensions = dms)
 
 d <- GetData(key = k,
-             normalized = FALSE, 
-             pivoting = c(Pivoting(code = "reportingCountryM49"),
-                          Pivoting(code = "partnerCountryM49"),
-                          Pivoting(code = "measuredItemHS"),
-                          Pivoting(code = "timePointYears"),
-                          Pivoting(code = "measuredElementTrade")
+             normalized = T, 
+             pivoting = c(Pivoting(code = rtvar),
+                          Pivoting(code = ptvar),
+                          Pivoting(code = itmvar),
+                          Pivoting(code = elevar),
+                          Pivoting(code = yrvar)
                           ))
 
              
 ```
+
+```{r}
+yearslist <- GetCodeList(dmn, dtset, dimension = yrvar)
+```
+
 
