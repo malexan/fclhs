@@ -12,4 +12,5 @@ Imports:
     ggvis,
     shiny,
     lubridate,
-    stringr
+    stringr,
+    countrycode
