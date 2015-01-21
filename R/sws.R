@@ -65,7 +65,7 @@ getswsct <- function(area, year, partner, item #,
 #' Function ping send one ping-request to a server and returns TRUE 
 #' if gets a response.
 #' 
-#' @source \url(https://github.com/mkao006/r_style_fao/blob/master/functions/sws_query.r)
+#' @source \url{ttps://github.com/mkao006/r_style_fao/blob/master/functions/sws_query.r}
 
 ping <- function(x, stderr = FALSE, stdout = FALSE, ...){
   
@@ -78,4 +78,13 @@ ping <- function(x, stderr = FALSE, stdout = FALSE, ...){
                      stdout, ...)
   
   pingvec == 0
+}
+
+#' Run jnc script to establish VPN-connection with FAO network.
+#' 
+#' Juniper VPN software has to be installed.
+#' 
+startjnc <- function(path = "/usr/local/bin/", profile = "fao") {
+  if(Platform$OS.type != "unix") stop("Please set up a VPN connection with FAO intranet manually")
+  system(paste0(path, "jnc --nox ", profile))
 }

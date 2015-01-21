@@ -5,7 +5,7 @@
 \title{Function ping send one ping-request to a server and returns TRUE
 if gets a response.}
 \source{
-\url(https://github.com/mkao006/r_style_fao/blob/master/functions/sws_query.r)
+\url{ttps://github.com/mkao006/r_style_fao/blob/master/functions/sws_query.r}
 }
 \usage{
 ping(x, stderr = FALSE, stdout = FALSE, ...)
