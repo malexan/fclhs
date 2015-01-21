@@ -12,7 +12,7 @@ barchart <- function() {
       sidebarLayout(
         sidebarPanel(
                      sliderInput("year", "Year of report", 2007, 2011, 2011,
-                                 format = "####"),
+                                 sep = ""),
                      selectInput("reporter", "Reporter", 
                                  c("Mexico" = 138)),
                      selectInput("pt", "Trade partner", 
@@ -60,11 +60,11 @@ barchart <- function() {
         data() %>%
           mutate(group = factor(group)) %>%
           group_by(flow) %>% # Workaroud with bug in layer_bars()
-          ggvis(~group, ~qdiff) %>%
+          ggvis(~group, ~qdiff / 1000) %>%
           layer_bars(fill = ~flow, stack = T, width = input$w) %>% # No option in ggvis 
           # to plot dodged bars
           add_axis("x", title = "Commodities group IDs") %>%
-          add_axis("y", title = "Difference between FAO and UN Comtrade",
+          add_axis("y", title = "Difference between FAO and UN Comtrade, 1000",
                    title_offset = 50)
       }) %>%
         bind_shiny("bar1")
