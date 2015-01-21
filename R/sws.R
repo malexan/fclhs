@@ -5,7 +5,7 @@
 #' @import dplyr
 #' @import faosws
 #' @export
-getswsct <- function(area, year, partner #, 
+getswsct <- function(area, year, partner, item #, 
                      #flow = "all", code = "AG6" #, compact = T,
                      #desc = F, debug = F
                      ) {
@@ -18,8 +18,20 @@ getswsct <- function(area, year, partner #,
   elevar <- "measuredElementTrade"
   yrvar  <- "timePointYears"
   
+  if(!missing(partner) & !is.character(partner)) partner <- as.character(partner)
+  if(!missing(area) & !is.character(area)) area <- as.character(area)
+  if(!missing(year) & !is.character(year)) year <- as.character(year)
+  if(!missing(item) & !is.character(item)) item <- as.character(item)
+  
   if(missing(partner)) {
-    partner <- GetCodeList(dmn, dtset, dimension = ptvar)$code
+    partner <- GetCodeList(dmn, dtset, ptvar)$code
+  }
+  
+  if(missing(item)) {
+    item <- GetCodeList(dmn, dtset, itmvar)$code
+    
+    # Select HS code of length 6
+    item <- item[!is.na(item) & nchar(item) == 6]
   }
   
   dms <- list(Dimension(name = rtvar,
@@ -27,7 +39,7 @@ getswsct <- function(area, year, partner #,
               Dimension(name = ptvar,
                         keys = partner),
               Dimension(name = itmvar,
-                        keys = "010110"),
+                        keys = item),
               Dimension(name = elevar,
                         keys = c("5621", "5921")),
               Dimension(name = yrvar, 
@@ -47,4 +59,23 @@ getswsct <- function(area, year, partner #,
                ))
   
   d
+}
+
+
+#' Function ping send one ping-request to a server and returns TRUE 
+#' if gets a response.
+#' 
+#' @source \url(https://github.com/mkao006/r_style_fao/blob/master/functions/sws_query.r)
+
+ping <- function(x, stderr = FALSE, stdout = FALSE, ...){
+  
+  # Windows and unix pings have different argnames for count
+  pingcountarg <- ifelse(.Platform$OS.type == "unix", "c", "n")
+  
+  pingvec <- system2("ping",
+                     paste0('-', pingcountarg, ' 1 ', x),
+                     stderr,
+                     stdout, ...)
+  
+  pingvec == 0
 }
