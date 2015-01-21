@@ -22,6 +22,9 @@ barchart <- function() {
                                    "Value ($1000)" = "vdiff")),
                      sliderInput("rws", "Groups to display",
                                  1, 20, 10),
+                     radioButtons("ctsource", "Source of ComTrade data:",
+                                  c("CT public API" = "api",
+                                    "FAO SWS" = "sws")),
                      sliderInput("w", "Bin width", .1, 1, .9)),
         mainPanel(ggvisOutput("bar1"),
                   dataTableOutput("data"))
