@@ -5,10 +5,22 @@
 #' @import dplyr
 #' @import faosws
 #' @export
-getswsct <- function(area, year, partner, item #, 
-                     #flow = "all", code = "AG6" #, compact = T,
+getswsct <- function(area, partner, year, item, 
+                     flow = "all", 
+                     swshost = "hqlqasws1.hq.un.fao.org",
+                     swsport = "8181",
+                     swspath = "/sws",
+                     sessionid = "3870d0bb-2a46-4525-ba44-d9d246ecf502"
+                     #, code = "AG6" #, compact = T,
                      #desc = F, debug = F
                      ) {
+  if(!ping(swshost)) startjnc()
+  
+  # Detecting existence of SWS TestEnvir in calling env
+  # by counting swsContext.* vars
+  if(length(ls(pos = 1, pattern = "^swsContext\\.")) < 8)
+    GetTestEnvironment(paste0("https://", swshost, ":", swsport, swspath),
+                       sessionid)
   
   dmn    <- "trade"
   dtset  <- "ct_raw_tf"
@@ -17,11 +29,13 @@ getswsct <- function(area, year, partner, item #,
   itmvar <- "measuredItemHS"
   elevar <- "measuredElementTrade"
   yrvar  <- "timePointYears"
+
+  # TODO replace this !missing & is.ch. It leads to error if missing.
   
   if(!missing(partner) & !is.character(partner)) partner <- as.character(partner)
   if(!missing(area) & !is.character(area)) area <- as.character(area)
   if(!missing(year) & !is.character(year)) year <- as.character(year)
-  if(!missing(item) & !is.character(item)) item <- as.character(item)
+ # if(!missing(item) & !is.character(item)) item <- as.character(item)
   
   if(missing(partner)) {
     partner <- GetCodeList(dmn, dtset, ptvar)$code
@@ -34,6 +48,8 @@ getswsct <- function(area, year, partner, item #,
     item <- item[!is.na(item) & nchar(item) == 6]
   }
   
+  if(tolower(flow) == "all") ele <- GetCodeList(dmn, dtset, elevar)$code
+  
   dms <- list(Dimension(name = rtvar,
                         keys = area),
               Dimension(name = ptvar,
@@ -41,7 +57,7 @@ getswsct <- function(area, year, partner, item #,
               Dimension(name = itmvar,
                         keys = item),
               Dimension(name = elevar,
-                        keys = c("5621", "5921")),
+                        keys = ele),
               Dimension(name = yrvar, 
                         keys = year))
   
@@ -85,6 +101,6 @@ ping <- function(x, stderr = FALSE, stdout = FALSE, ...){
 #' Juniper VPN software has to be installed.
 #' 
 startjnc <- function(path = "/usr/local/bin/", profile = "fao") {
-  if(Platform$OS.type != "unix") stop("Please set up a VPN connection with FAO intranet manually")
+  if(.Platform$OS.type != "unix") stop("Please set up a VPN connection with FAO intranet manually")
   system(paste0(path, "jnc --nox ", profile))
 }

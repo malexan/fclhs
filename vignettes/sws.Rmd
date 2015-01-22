@@ -101,9 +101,11 @@ d <- GetData(key = k,
 ```{r}
 yearslist <- GetCodeList(dmn, dtset, dimension = yrvar)
 
-getswsct(484, 2011, 842)
+getswsct(484, 842, 2011)
 
-itemslist <- GetCodeList(dmn, dtset, dimension = elevar)
+elelist <- GetCodeList(dmn, dtset, dimension = elevar)
+
+if(!ping("hqlqasws1.hq.un.fao.org")) startvnc()
 ```
 
 
