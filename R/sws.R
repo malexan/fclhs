@@ -32,6 +32,9 @@ getswsct <- function(area = NULL,
   itmvar <- "measuredItemHS"
   elevar <- "measuredElementTrade"
   yrvar  <- "timePointYears"
+  elesfx <- c("00", "08", "21") # kg, units, US$
+  import <- "56"
+  export <- "59"
 
   # TODO replace this !missing & is.ch. It leads to error if missing.
   
@@ -56,7 +59,11 @@ getswsct <- function(area = NULL,
     item <- item[!is.na(item) & nchar(item) == 6]
   }
   
-  if(tolower(flow) == "all") ele <- GetCodeList(dmn, dtset, elevar)$code
+  if(tolower(flow) == "all") ele <- c(paste0(export, elesfx), 
+                                      paste0(import, elesfx))
+  if(tolower(flow) == "import") ele <- paste0(import, elesfx)
+  if(tolower(flow) == "export") ele <- paste0(export, elesfx)
+  
   
   dms <- list(Dimension(name = rtvar,
                         keys = area),

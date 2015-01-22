@@ -106,6 +106,9 @@ getswsct(484, 842, 2011)
 elelist <- GetCodeList(dmn, dtset, dimension = elevar)
 
 if(!ping("hqlqasws1.hq.un.fao.org")) startvnc()
+
+fclhs::getunct(484, 2011, 842) %>% filter(hs == "010110")
+x <- getswsct(484, 842, 2011, "010110")
 ```
 
 
