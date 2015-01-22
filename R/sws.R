@@ -6,8 +6,8 @@
 #' @import faosws
 #' @export
 getswsct <- function(area = NULL,
-                     partner = NULL,
                      year = NULL,
+                     partner = NULL,
                      item = NULL, 
                      flow = "all", 
                      swshost = "hqlqasws1.hq.un.fao.org",
