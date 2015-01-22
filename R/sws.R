@@ -5,7 +5,10 @@
 #' @import dplyr
 #' @import faosws
 #' @export
-getswsct <- function(area, partner, year, item, 
+getswsct <- function(area = NULL,
+                     partner = NULL,
+                     year = NULL,
+                     item = NULL, 
                      flow = "all", 
                      swshost = "hqlqasws1.hq.un.fao.org",
                      swsport = "8181",
@@ -32,16 +35,21 @@ getswsct <- function(area, partner, year, item,
 
   # TODO replace this !missing & is.ch. It leads to error if missing.
   
-  if(!missing(partner) & !is.character(partner)) partner <- as.character(partner)
-  if(!missing(area) & !is.character(area)) area <- as.character(area)
-  if(!missing(year) & !is.character(year)) year <- as.character(year)
- # if(!missing(item) & !is.character(item)) item <- as.character(item)
+  ascharnotnullarg <- function(arg) {
+    if(!is.null(arg) & !is.character(arg)) arg <- as.character(arg)
+    arg
+  }
   
-  if(missing(partner)) {
+  partner <- ascharnotnullarg(partner)
+  area    <- ascharnotnullarg(area)
+  year    <- ascharnotnullarg(year)
+  item    <- ascharnotnullarg(item)
+  
+  if(is.null(partner)) {
     partner <- GetCodeList(dmn, dtset, ptvar)$code
   }
   
-  if(missing(item)) {
+  if(is.null(item)) {
     item <- GetCodeList(dmn, dtset, itmvar)$code
     
     # Select HS code of length 6
