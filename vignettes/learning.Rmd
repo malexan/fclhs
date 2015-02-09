@@ -1,0 +1,142 @@
+---
+title: "Machine learning"
+output: html_document
+---
+
+```{r}
+library(dplyr)
+
+data <- read.table("/home/ep/world_TF_comp.csv.gz", 
+                header = T, 
+                sep = ",",
+                nrows = 1191653,
+                stringsAsFactors = F,
+                colClasses = c("integer", 
+                               "integer",
+                               "character",
+                               "integer",
+                               "integer",
+                               "numeric",
+                               "numeric",
+                               "numeric",
+                               "integer",
+                               "integer"))
+
+# Number of countries
+data %>%
+  select(reporter) %>%
+  distinct() %>%
+  nrow()
+
+# Number of FCL
+data %>%
+  select(fcl_code) %>%
+  distinct() %>%
+  nrow()
+
+# Number of FCL
+data %>%
+  select(hs_code) %>%
+  distinct() %>%
+  nrow()
+
+# Number of FCL
+data %>%
+  select(hs_code) %>%
+  distinct() %>%
+  nrow()
+
+data %>%
+  filter(reporter == 138, partner == 2,
+         fcl_code == 18)
+```
+
+
+```{r}
+# DF for learning
+data <- data %>%
+  rename(hs      = hs_code,
+         fcl     = fcl_code,
+         qty     = source.orig_qty,
+         qty2    = source.other_qty,
+         value   = source.value,
+         qty.fcl = valid.qty,
+         vl.fcl  = valid.value) %>%
+  mutate(reporter = factor(reporter),
+         partner  = factor(partner),
+         hs       = factor(hs),
+         fcl      = factor(fcl),
+         flow     = factor(flow))
+
+train <- sample.int(nrow(data), 10000)
+
+data1 <- data[train, ] %>%
+  select(-qty.fcl, -vl.fcl) %>%
+  droplevels()
+
+
+
+inTrain <- caret::createDataPartition(data$fcl,
+                               p = .001,
+                               list = F)
+
+d_tr <- data[inTrain,]
+rf1 <- train(fcl ~ ., data = d_tr, 
+             method = 'rf',
+             trControl = trainControl(method = "cv",number = 1),
+             prox = TRUE)
+
+foreign::write.arff(data1, file = "train10000.arff")
+
+```
+
+```{r}
+rf2 <- randomForest::randomForest(fcl ~ ., data = data1)
+```
+
+```{r}
+rf1 <- bigrf::bigrfc(data1[, -4], data1$fcl, 10L)
+```
+
+## 1st of Feb
+
+Reduce size of dataset and try RF model training.
+
+## 2nd of Feb
+
+Is there only one year? In this case only one HS item can exist in area/partner/year/flow.
+
+```{r}
+data %>%
+  group_by(reporter, partner, flow, hs) %>%
+  mutate(n = n()) %>%
+  filter(n > 1) ->
+  dupls
+```
+Many double rows with duplicated FCL quantity and value.
+
+```{r}
+dupls %>%
+  mutate(qty.fcl1 = lead(qty.fcl),
+         vl.fcl1 = lead(vl.fcl)) %>%
+  filter(!is.na(qty.fcl1) | !is.na(vl.fcl1)) %>%
+  filter(qty.fcl != qty.fcl1)
+
+getswsct(area = faoarea(10), year = 2011, partner = faoarea(9), item = "220300", testcodes = T)
+```
+
+Length of HS codes
+```{r}
+table(nchar(as.character(data$hs)))
+```
+
+
+Test dataset
+```{r}
+testdata <- data[-train,] %>%
+  filter(reporter %in% levels(data1$reporter),
+         partner %in% levels(data1$partner),
+         hs %in% levels(data1$hs),
+         fcl %in% levels(data1$fcl))
+```
+

@@ -101,14 +101,17 @@ d <- GetData(key = k,
 ```{r}
 yearslist <- GetCodeList(dmn, dtset, dimension = yrvar)
 
-getswsct(484, 842, 2011)
+getswsct(area = 484, partner = 842, year = 2011)
 
 elelist <- GetCodeList(dmn, dtset, dimension = elevar)
 
-if(!ping("hqlqasws1.hq.un.fao.org")) startvnc()
+if(!ping("hqlqasws1.hq.un.fao.org")) startjnc()
 
 fclhs::getunct(484, 2011, 842) %>% filter(hs == "010110")
-x <- getswsct(484, 842, 2011, "010110")
+x <- getswsct(area = 484, 
+              year = 2011, 
+              partner = 842, 
+              item = "010110")
 ```
 
 

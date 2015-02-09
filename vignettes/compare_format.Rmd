@@ -157,4 +157,40 @@ table(mxcfao3$unit)
 head(joincompared(mxcfao3, mxcus))
 ```
 
+```{r}
+x <- read.table("Trade_Crops_Livestock_E_All_Data.csv.gz", 
+                header = T, 
+                sep = ",", 
+                nrows = 13660482,
+                stringsAsFactors = F,
+                colClasses = c("integer", 
+                               "character",
+                               "integer",
+                               "character",
+                               "integer",
+                               "integer",
+                               "character",
+                               "integer",
+                               "character",
+                               "numeric",
+                               "character"))
+
+x <- read.table("/home/ep/world_TF_comp.csv.gz", 
+                header = T, 
+                sep = ",",
+                nrows = 1191653,
+                stringsAsFactors = F,
+                colClasses = c("integer", 
+                               "integer",
+                               "character",
+                               "integer",
+                               "integer",
+                               "numeric",
+                               "numeric",
+                               "numeric",
+                               "integer",
+                               "integer"))
+
+
+```
 
