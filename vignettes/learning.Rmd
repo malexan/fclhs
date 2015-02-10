@@ -6,7 +6,7 @@ output: html_document
 ```{r}
 library(dplyr)
 
-data <- read.table("/home/ep/world_TF_comp.csv.gz", 
+data <- read.table("../trade//rf/world_TF_comp.csv.gz", 
                 header = T, 
                 sep = ",",
                 nrows = 1191653,
@@ -68,6 +68,7 @@ data <- data %>%
          fcl      = factor(fcl),
          flow     = factor(flow))
 
+set.seed(124)
 train <- sample.int(nrow(data), 10000)
 
 data1 <- data[train, ] %>%
@@ -86,7 +87,7 @@ rf1 <- train(fcl ~ ., data = d_tr,
              trControl = trainControl(method = "cv",number = 1),
              prox = TRUE)
 
-foreign::write.arff(data1, file = "train10000.arff")
+foreign::write.arff(data1, file = "../trade//rf/train10000.arff")
 
 ```
 
@@ -140,18 +141,73 @@ testdata <- data[-train,] %>%
          fcl %in% levels(data1$fcl)) %>%
   rename(fcl.orig = fcl)
 
-foreign::write.arff(testdata, file = "test.arff")
+foreign::write.arff(testdata, file = "../trade//rf/test.arff")
 
-pred <- read.table("../pred.tsv", header = F, sep = '\t')
+pred <- read.table("../trade//rf/preds.tsv", header = F, sep = '\t')
 nrow(pred) == nrow(testdata)
 testdata <- cbind(testdata, pred$V2)
 names(testdata)[dim(testdata)[2]] <- "fcl.pred"
 testdata %>%
   mutate(matched = as.numeric(fcl.pred == fcl.orig)) %>%
   group_by(matched) %>%
-  summarise(n = n())
+  summarise(n = n()) %>%
+  mutate(prop = n / sum(n))
 ```
+
+
+[ep@centos7 ~]$ go/bin/growforest -train train10000.arff -rfpred forest10000.rf -target fcl -nTrees 10
+Threads : 1
+nTrees : 10
+Loading data from: train10000.arff
+Target : fcl
+Non Target Features : 7
+mTry : 3
+non-missing cases: 10000
+leafSize : 1
+nSamples : 10000
+Performing classification with 440 categories.
+Total training time (seconds): 6970.390662117
 
   matched      n
 1       0 583749
-2       1 305731
+2       1 305731 34%
+
+
+~/go/bin/growforest -train train20000.arff -rfpred forest20000.rf -target fcl -nTrees 10 -nCores 8
+
+Threads : 8
+nTrees : 10
+Loading data from: train20000.arff
+Target : fcl
+Non Target Features : 7
+mTry : 3
+non-missing cases: 20000
+leafSize : 1
+nSamples : 20000
+Performing classification with 464 categories.
+Total training time (seconds): 1669.619664377
+
+~/go/bin/applyforest -fm test.arff -rfpred forest20000.rf -preds preds.tsv
+
+  matched      n      prop
+1       0 631016 0.6374079
+2       1 358956 0.3625921
+
+
+[sas@localhost rf]$ ~/go/bin/growforest -train train10000.arff -rfpred forest10000.rf -target fcl -nTrees 50 -nCores 8
+Threads : 8
+nTrees : 50
+Loading data from: train10000.arff
+Target : fcl
+Non Target Features : 7
+mTry : 3
+non-missing cases: 10000
+leafSize : 1
+nSamples : 10000
+Performing classification with 433 categories.
+Total training time (seconds): 1731.072929593
+
+
+  matched      n      prop
+1       0 531598 0.5968364
+2       1 359095 0.4031636
