@@ -137,6 +137,21 @@ testdata <- data[-train,] %>%
   filter(reporter %in% levels(data1$reporter),
          partner %in% levels(data1$partner),
          hs %in% levels(data1$hs),
-         fcl %in% levels(data1$fcl))
+         fcl %in% levels(data1$fcl)) %>%
+  rename(fcl.orig = fcl)
+
+foreign::write.arff(testdata, file = "test.arff")
+
+pred <- read.table("../pred.tsv", header = F, sep = '\t')
+nrow(pred) == nrow(testdata)
+testdata <- cbind(testdata, pred$V2)
+names(testdata)[dim(testdata)[2]] <- "fcl.pred"
+testdata %>%
+  mutate(matched = as.numeric(fcl.pred == fcl.orig)) %>%
+  group_by(matched) %>%
+  summarise(n = n())
 ```
 
+  matched      n
+1       0 583749
+2       1 305731
