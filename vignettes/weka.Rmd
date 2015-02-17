@@ -1,0 +1,71 @@
+---
+title: "manual"
+author: "Aleksandr Matrunich"
+date: "02/16/2015"
+output: html_document
+---
+
+```{r}
+options(java.parameters = "-Xmx7g")
+library(RWeka)
+library(dplyr)
+library(stringr)
+
+
+data <- read.table("../trade//rf/world_TF_comp.csv.gz", 
+                header = T, 
+                sep = ",",
+                nrows = 1191653,
+                stringsAsFactors = F,
+                colClasses = c("integer", 
+                               "integer",
+                               "character",
+                               "integer",
+                               "integer",
+                               "numeric",
+                               "numeric",
+                               "numeric",
+                               "integer",
+                               "integer")) %>%
+  rename(hs      = hs_code,
+         fcl     = fcl_code,
+         qty     = source.orig_qty,
+         qty2    = source.other_qty,
+         value   = source.value,
+         qty.fcl = valid.qty,
+         vl.fcl  = valid.value) %>%
+  mutate(reporter = factor(reporter),
+         partner  = factor(partner),
+         hs6      = as.factor(str_extract(hs, "^.{6}")),
+         hs       = factor(hs),
+         fcl      = factor(fcl),
+         flow     = factor(flow))
+
+train <- sample.int(nrow(data), 100)
+
+traindata <- data[train, ] %>%
+  select(-qty.fcl, -vl.fcl, -hs) %>%
+  droplevels()
+
+
+tree1 <- J48(fcl ~., data = traindata)
+tree2 <- LMT(fcl ~., data = traindata)
+# tree3 <- M5P(fcl ~., data = traindata)
+tree4 <- DecisionStump(fcl ~., data = traindata)
+
+
+testdata <- data[-train,] %>%
+  filter(reporter %in% levels(traindata$reporter),
+         partner  %in% levels(traindata$partner),
+         hs6      %in% levels(traindata$hs6),
+         fcl      %in% levels(traindata$fcl)) %>%
+  select(-qty.fcl, -vl.fcl, -hs, -fcl) %>%
+  sample_n(size = 100, replace = T) 
+
+eval_tree1 <- evaluate_Weka_classifier(tree4, newdata = testdata, numFolds = 5)
+eval_tree1$details
+
+predict(tree1, newdata = testdata)
+
+```
+
