@@ -141,14 +141,14 @@ testdata <- data[-train,] %>%
          fcl %in% levels(data1$fcl)) %>%
   rename(fcl.orig = fcl)
 
-foreign::write.arff(testdata, file = "../trade//rf/test.arff")
+foreign::write.arff(testdata, file = "~/trade//rf/test.arff")
 
 write.table(data1, "test200000.csv", row.names = F)
 
-pred <- read.table("../trade//rf/preds.tsv", header = F, sep = '\t')
+pred <- read.table("~/trade//rf/preds.tsv", header = F, sep = '\t')
 nrow(pred) == nrow(testdata)
-testdata <- cbind(testdata, pred$V2)
-names(testdata)[dim(testdata)[2]] <- "fcl.pred"
+testdata$fcl.pred <- pred$V2
+
 testdata %>%
   mutate(matched = as.numeric(fcl.pred == fcl.orig)) %>%
   group_by(matched) %>%
@@ -174,6 +174,29 @@ Total training time (seconds): 6970.390662117
 1       0 583749
 2       1 305731 34%
 
+More vars 
+
+  matched     n      prop
+1       0 96677 0.6224616
+2       1 58637 0.3775384
+
+Less vars
+
+  matched     n      prop
+1       0 90284 0.5812998
+2       1 65030 0.4187002
+
+100 Trees, less
+
+  matched     n      prop
+1       0 85775 0.5522683
+2       1 69539 0.4477317
+
+100 Trees, more
+
+  matched     n      prop
+1       0 86093 0.5543158
+2       1 69221 0.4456842
 
 ~/go/bin/growforest -train train20000.arff -rfpred forest20000.rf -target fcl -nTrees 10 -nCores 8
 
@@ -195,6 +218,11 @@ Total training time (seconds): 1669.619664377
 1       0 631016 0.6374079
 2       1 358956 0.3625921
 
+
+Without values
+  matched     n      prop
+1       0 65446 0.4224258
+2       1 89483 0.5775742
 
 [sas@localhost rf]$ ~/go/bin/growforest -train train10000.arff -rfpred forest10000.rf -target fcl -nTrees 50 -nCores 8
 Threads : 8
@@ -306,13 +334,22 @@ Finished at 21:31
 data <- data %>%
   mutate(hs6 = as.factor(stringr::str_extract(as.character(hs), "^.{6}")))
 
-train <- sample.int(nrow(data), 20000)
+train <- sample.int(nrow(data), 10000)
 
 data1 <- data[train, ] %>%
   select(-qty.fcl, -vl.fcl, -hs) %>%
   droplevels()
 
-foreign::write.arff(data1, file = "../trade//rf/train200000.arff")
+data1 <- data[train, ] %>%
+  select(reporter, partner, hs6, flow, fcl) %>%
+  droplevels()
+
+data1 <- data[train, ] %>%
+  select(hs6, flow, fcl) %>%
+  droplevels()
+
+
+foreign::write.arff(data1, file = "~/trade/rf/train10000.arff")
 
 ```
 
