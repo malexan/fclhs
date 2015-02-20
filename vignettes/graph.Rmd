@@ -11,6 +11,15 @@ library(stringr)
 library(igraph)
 library(reshape2)
 
+areacodes2names <- function(code) {
+  factor(code,
+         levels = unique(code),
+         labels = sapply(unique(code), 
+                         function(x) {
+                           faoareanames$name[faoareanames$fao == x]
+                           }))
+  }
+  
 
 data <- read.table("../trade//rf/world_TF_comp.csv.gz", 
                    header = T, 
@@ -34,15 +43,16 @@ data <- read.table("../trade//rf/world_TF_comp.csv.gz",
          value   = source.value,
          qty.fcl = valid.qty,
          vl.fcl  = valid.value) %>%
-  mutate(reporter = (reporter),
-         partner  = (partner),
+  mutate(reporter = areacodes2names(reporter),
+         partner  = areacodes2names(partner),
          hs6      = factor(stringr::str_extract(hs, "^.{6}")),
          fcl      = factor(fcl),
-         flow     = (flow),
+         flow     = factor(flow),
          qty2     = qty2,
          value    = value) %>%
   select(-hs) %>%
   rename(hs = hs6)
+
 
 ```
 
@@ -102,7 +112,7 @@ d <- plyr::ddply(data[data$reporter == 41,], c("flow", "reporter", "partner"), f
   x <- x %>%
   left_join(linksgroups(x$hs, x$fcl), by = 'hs')
   
-  prop <- function(x) round(x / sum(x), 2)
+  prop <- function(x) round(x / sum(as.numeric(x)), 2)
   
   x %>%
     group_by_(~membership) %>%
@@ -117,9 +127,59 @@ d <- plyr::ddply(data[data$reporter == 41,], c("flow", "reporter", "partner"), f
 x %>%
   group_by(membership) %>%
   mutate(qty = qty / sum(qty))
-  
-  
+
     conv.prop()
 
+data <- data %>%
+  left_join(linksgroups(data$hs, data$fcl), by = 'hs')  
+
+d1 <- data %>%
+  group_by(flow, reporter, partner, membership) %>%
+  mutate_(qty     = ~prop(qty),
+          qty2    = ~prop(qty2),
+          value   = ~prop(value),
+          qty.fcl = ~prop(qty.fcl),
+          vl.fcl  = ~prop(vl.fcl))
+
+table(d1$membership)
+
+d1 %>%
+  ungroup() %>%
+  select(fcl, hs, membership) %>%
+  distinct() %>%
+  group_by(membership) %>%
+  summarize(n = n()) %>%
+  filter(n == 5)
+
+d1 %>%
+  group_by(flow, reporter, partner) %>%
+  filter(membership == 10,
+         reporter   == "Australia") %>%
+  mutate(link = paste0(hs, "_", fcl),
+         qdif = qty2 - qty.fcl,
+         vdif = value - vl.fcl) %>%
+  ggplot(aes(link, vdif)) + 
+  geom_bar(stat = "identity") +
+  facet_wrap(~ partner) +
+  scale_y_continuous(labels = percent, limits = 0:1)
+
+d2 <- d1 %>%
+  group_by(flow, reporter, partner, membership) %>%
+    mutate(qdif = qty2 - qty.fcl,
+           vdif = value - vl.fcl) %>%
+  summarize(quan.sd = sd(qdif, na.rm = T),
+         val.sd = sd(vdif, na.rm = T)) 
+
+d2 %>%
+  group_by(flow) %>%
+  summarize(q = mean(quan.sd, na.rm = T),
+            v = mean(val.sd, na.rm = T))
+
+d2 %>%
+  group_by(reporter) %>%
+  summarize(q = mean(quan.sd, na.rm = T),
+            v = mean(val.sd, na.rm = T)) %>%
+  reshape2::melt(value.name = "mean.sd", variable.name = "item") %>%
+  ggplot(aes(mean.sd, color = item)) + geom_density()
 ```
 
