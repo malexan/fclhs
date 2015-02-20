@@ -89,18 +89,19 @@ unctfaoareasmap <- read.table(file = system.file("extdata",
                               header = T, sep = ",")
 names(unctfaoareasmap) <- c("unct", "fao")
 
-
+save(unctfaoareasmap, file = 'data/unctfaoareasmap.rda')
 
 # http://faostat.fao.org/DesktopModules/Faostat/AreaGroups/DownloadAreaList.aspx?caseDownload=0&selectedLanguage=E
 # http://faostat.fao.org/site/371/DesktopDefault.aspx?PageID=371
 
-areanames <- read.table(file = system.file("extdata", 
+faoareanames <- read.table(file = system.file("extdata", 
                                            "FaostatAreaList.csv", 
                                            package = "fclhs"),
                         header = T, sep = ";", na.strings = "..",
                         quote = "")
 
-save(unctfaoareasmap, file = 'data/unctfaoareasmap.rda')
+save(areanames, file = 'data/faoareanames.rda')
+
 
 
 
