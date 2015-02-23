@@ -6,7 +6,8 @@
 \usage{
 getswsct(area = NULL, year = NULL, partner = NULL, item = NULL,
   flow = "all", swshost = "hqlqasws1.hq.un.fao.org", swsport = "8181",
-  swspath = "/sws", sessionid = "3870d0bb-2a46-4525-ba44-d9d246ecf502")
+  swspath = "/sws", sessionid = "3870d0bb-2a46-4525-ba44-d9d246ecf502",
+  debug = F, testcodes = F)
 }
 \description{
 Get Comptrade trading data from SWS.
