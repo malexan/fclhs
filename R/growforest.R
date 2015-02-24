@@ -1,8 +1,9 @@
 #' Wrapper for CloudForest GO-lang RandomForest solution
 #' 
-#' @import dplyr
 #' 
 #' \url{https://github.com/ryanbressler/CloudForest}
+#' 
+#' @import dplyr
 
 
 growforest <- function(data, 
@@ -19,31 +20,40 @@ growforest <- function(data,
   
   if(!file.exists(workdir)) dir.create(workdir)
   
-  train <- sample.int(nrow(data), sample)
+  moment <-  format(Sys.time(), "%Y%m%d%H%M%S")
+  fileprefix <- c(workdir, "/")
   
-  traindata <- data[train,]
+  trainfile <- paste0(fileprefix, "traindata", moment, ".arff")
+  testfile  <- paste0(fileprefix, "testdata", moment, ".arff")
+  rffile    <- paste0(fileprefix, "forest", moment, ".rf")
+  predsfile <- paste0(fileprefix, "preds", moment, ".tsv")
   
-  trainfile <- paste0(workdir, "/traindata.arff")
-  testfile  <- paste0(workdir, "/testdata.arff")
-  rffile    <- paste0(workdir, "/forest.rf")
-  predsfile <- paste0(workdir, "/preds.tsv")
+  if(!missing(sample)) {
+    
+    train <- sample.int(nrow(data), sample)
+    
+    traindata <- data[train,]
+    
+    testdata <- data[-train,] 
+    
+    if(rm.unused) testdat <- testdata %>%
+      filter_(~reporter %in% levels(traindata$reporter),
+              ~partner  %in% levels(traindata$partner),
+              ~hs       %in% levels(traindata$hs),
+              ~fcl      %in% levels(traindata$fcl)) 
+    
+    foreign::write.arff(testdata, 
+                        file = testfile)
+  }
+  
+  if(missing(sample)) traindata <- data
   
   foreign::write.arff(traindata, 
                       file = trainfile)
   
-  testdata <- data[-train,] 
-  
-  if(rm.unused) testdat <- testdata %>%
-    filter_(~reporter %in% levels(traindata$reporter),
-            ~partner  %in% levels(traindata$partner),
-            ~hs       %in% levels(traindata$hs),
-            ~fcl      %in% levels(traindata$fcl)) 
-  
-  foreign::write.arff(testdata, 
-                      file = testfile)
   
   argums <- c(paste0("-train ", trainfile),
-              paste0("-test ", testfile),
+              ifelse(!missing(sample), paste0("-test ", testfile), ""),
               paste0("-target ", target),
               paste0("-rfpred ", rffile),
               paste0("-nTrees ", nTrees),
@@ -70,3 +80,6 @@ growforest <- function(data,
     mutate_(prop = ~n / sum(n))
   
 }
+
+
+applyforest <- function()

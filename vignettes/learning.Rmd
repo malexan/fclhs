@@ -334,7 +334,7 @@ Finished at 21:31
 data <- data %>%
   mutate(hs6 = as.factor(stringr::str_extract(as.character(hs), "^.{6}")))
 
-train <- sample.int(nrow(data), 10000)
+train <- sample.int(nrow(data), 150000)
 
 data1 <- data[train, ] %>%
   select(-qty.fcl, -vl.fcl, -hs) %>%
@@ -349,7 +349,7 @@ data1 <- data[train, ] %>%
   droplevels()
 
 
-foreign::write.arff(data1, file = "~/trade/rf/train10000.arff")
+foreign::write.arff(data1, file = "~/trade/rf/train150000.arff")
 
 ```
 
@@ -468,5 +468,16 @@ testdata %>%
   group_by(matched) %>%
   summarise(n = n()) %>%
   mutate(prop = n / sum(n))
+```
+
+```{r cloudforest_function}
+
+                       
+data <- data %>%
+  mutate(hs6 = as.factor(stringr::str_extract(as.character(hs), "^.{6}"))) %>%
+  select(-hs, -qty.fcl, -vl.fcl)
+
+growforest(data, sample = 3000, target = "fcl", nTrees = 100, nCores = 8, progress = T, selftest = F)
+
 ```
 
