@@ -27,3 +27,16 @@ NULL
 #' }
 #' @name unctfaoareasmap
 NULL
+
+#' FAO areas names
+#' 
+#' @format A data frame with 293 observatins of 4 variables.
+#' \describe{
+#'   \item{fao}{FAO area code, numeric.}
+#'   \item{iso2}{ISO2 area code, double character.}
+#'   \item{name}{short area name, charecter.}
+#'   \item{longname}{full area name, charecter.}
+#' }
+#' 
+#' @name faoareanames
+NULL

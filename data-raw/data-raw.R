@@ -97,10 +97,9 @@ save(unctfaoareasmap, file = 'data/unctfaoareasmap.rda')
 faoareanames <- read.table(file = system.file("extdata", 
                                            "FaostatAreaList.csv", 
                                            package = "fclhs"),
-                        header = T, sep = ";", na.strings = "..",
-                        quote = "")
+                        header = T, sep = ",", na.strings = "..")
 
-save(areanames, file = 'data/faoareanames.rda')
+save(faoareanames, file = 'data/faoareanames.rda')
 
 
 
