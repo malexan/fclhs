@@ -9,6 +9,6 @@ growforest(data, sample, target, nTrees = 100, nSamples = 0, nCores = 1,
   workdir = "tmp")
 }
 \description{
-Wrapper for CloudForest GO-lang RandomForest solution
+\url{https://github.com/ryanbressler/CloudForest}
 }
 
