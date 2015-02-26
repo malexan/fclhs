@@ -2,6 +2,8 @@
 #' raw data.
 #'  
 #' @import dplyr
+#' 
+#' @export
 
 linksgroups <- function(hs, fcl) {
   
@@ -25,7 +27,7 @@ linksgroups <- function(hs, fcl) {
   
   grph.df %>%
     filter_(~classif == "hs") %>%
-    mutate_(hs = ~factor(stringr::str_extract(name, "\\d.*$"))) %>%
+    mutate_(hs = ~stringr::str_extract(name, "\\d.*$")) %>%
     select_(~hs, ~membership)
 }
 

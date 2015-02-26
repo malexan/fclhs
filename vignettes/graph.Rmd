@@ -10,6 +10,7 @@ library(dplyr)
 library(stringr)
 library(igraph)
 library(reshape2)
+library(fclhs)
 
 areacodes2names <- function(code) {
   factor(code,
@@ -56,43 +57,19 @@ data <- read.table("../trade//rf/world_TF_comp.csv.gz",
 
 ```
 
-```{r}
-
-linksgroups <- function(hs, fcl) {
-  
-  data <- data.frame(hs, fcl) %>%
-    mutate_(hs  = ~paste0("hs", hs), #HS and FCL with similar number become one node
-            fcl = ~paste0("fcl", fcl)) 
-  
-  nodes <- data %>%
-    reshape2::melt(measure.vars  = c('hs', 'fcl'),
-                   variable.name = "classif",
-                   value.name    = "code") %>%
-    distinct_() %>%
-    select_(~code, ~classif)
-  
-  grph <- data %>%
-    igraph::graph.data.frame(vertices = nodes)
-  
-  grph.df <- igraph::get.data.frame(grph, what = 'vertices')
-  
-  grph.df$membership <- factor(igraph::clusters(grph)$membership)
-  
-  grph.df %>%
-    filter_(~classif == "hs") %>%
-    mutate_(hs = ~factor(stringr::str_extract(name, "\\d.*$"))) %>%
-    select_(~hs, ~membership)
-  }
-
-```
 
 ```{r}
 g1 <- data.frame(
   from = c("u", "u", "u", "m", "m", "m", "hs1", "hs2", "hs3"),
   to   = c("hs1", "hs2", "hs3", "hs1", "hs2", "hs3", "f1", "f2", "f3")) %>%
   graph.data.frame()
+
+plot(g1)
 ```
 
+
+
+Don't use conv.prop(), as prop.table() kills grouping in dplyr.
 ```{r}
 conv.prop <- function(data, dec = 2) {
   data %>%
@@ -108,21 +85,31 @@ data %>%
   rename(hs = hs6) %>%
   conv.prop
 
-d <- plyr::ddply(data[data$reporter == 41,], c("flow", "reporter", "partner"), function(x) {
-  x <- x %>%
-  left_join(linksgroups(x$hs, x$fcl), by = 'hs')
-  
-  prop <- function(x) round(x / sum(as.numeric(x)), 2)
-  
-  x %>%
-    group_by_(~membership) %>%
-    mutate_(qty     = ~prop(qty),
-            qty2    = ~prop(qty2),
-            value   = ~prop(value),
-            qty.fcl = ~prop(qty.fcl),
-            vl.fcl  = ~prop(vl.fcl))
-  })
 
+
+
+
+d %>%
+  filter(vdif < -5)
+
+d <- data %>%
+  filter(reporter == "Australia") %>%
+  mutate(hs = as.character(hs)) %>%
+#  plyr::ddply(c("flow", "partner"), function(x) {
+  plyr::ddply(c("flow", "partner"), function(x) {
+    x <- x %>%
+      left_join(linksgroups(x$hs, x$fcl), by = 'hs')
+    
+    prop <- function(x) round(x / sum(as.numeric(x)), 2)
+    
+    x %>%
+      group_by_(~membership) %>%
+      mutate_(qty     = ~prop(qty),
+              qty2    = ~prop(qty2),
+              value   = ~prop(value),
+              qty.fcl = ~prop(qty.fcl),
+              vl.fcl  = ~prop(vl.fcl))
+    })
 
 x %>%
   group_by(membership) %>%
@@ -181,5 +168,145 @@ d2 %>%
             v = mean(val.sd, na.rm = T)) %>%
   reshape2::melt(value.name = "mean.sd", variable.name = "item") %>%
   ggplot(aes(mean.sd, color = item)) + geom_density()
+```
+
+
+```{r}
+
+groups <- linksgroups(as.character(data$hs), as.character(data$fcl))
+
+#############
+## Chekings of eqalitiy of value/quantity on both sides
+##############
+d <- data %>%
+  filter(reporter == "Australia" &
+           flow == 1) %>%
+  mutate(hs = as.character(hs)) %>%
+  left_join(groups, by = 'hs') %>%
+  mutate(qty2  = round(qty2 / 1000, 0),
+         value = round(value / 1000, 0)) %>%
+  group_by(flow, reporter, partner, membership) %>%
+  summarise(qty     = sum(qty, na.rm = T),
+            qty2    = sum(qty2, na.rm = T),
+            value   = sum(value, na.rm = T),
+            qty.fcl = sum(qty.fcl, na.rm = T),
+            vl.fcl  = sum(vl.fcl, na.rm = T),
+            q2dif   = (qty2 - qty.fcl) / qty2,
+            vdif    = (value - vl.fcl) / value)
+
+ggplot(d, aes(q2dif)) + geom_density()
+```
+
+Add membership info to data
+```{r}
+
+prop <- function(x) round(x / sum(as.numeric(x), na.rm = T), 2)
+
+data1 <- data %>%
+  filter(reporter == "Australia" &
+           flow == 1) %>%
+  mutate(hs = as.character(hs)) %>%
+  left_join(groups, by = 'hs') %>%
+  mutate(qty2  = round(qty2 / 1000, 0),
+         value = round(value / 1000, 0)) %>%
+  group_by(flow, reporter, partner, membership) %>%
+  mutate_(qty     = ~prop(qty),
+          qty2    = ~prop(qty2),
+          value   = ~prop(value),
+          qty.fcl = ~prop(qty.fcl),
+          vl.fcl  = ~prop(vl.fcl))
+
+```
+
+Check for rows with duplicated attributes. Not finished
+
+```{r}
+
+data %>%
+  filter(reporter == "Australia" &
+           flow == 1) %>%
+  mutate(hs = as.character(hs)) %>%
+  left_join(groups, by = 'hs') %>%
+  group_by(flow, reporter, partner, membership ) %>%
+```
+
+Number of items on both sides to check how they spread value/quantity in fuzzy links.
+
+```{r}
+
+
+data1 <- data %>%
+  filter(reporter == "Australia" &
+           flow == 1) %>%
+  mutate(hs = as.character(hs)) %>%
+  left_join(groups, by = 'hs') %>%
+  left_join(data %>%
+              filter(reporter == "Australia" &
+                       flow == 1) %>%
+              mutate(hs = as.character(hs)) %>%
+              left_join(groups, by = 'hs') %>%
+              group_by(flow, reporter, partner, membership) %>%
+              summarize(n_hs = length(unique(hs)),
+                        n_fcl = length(unique(fcl))) %>%
+              ungroup()) %>%
+  select(reporter, partner, hs, fcl, qty2, qty.fcl, value, vl.fcl, qty, membership, n_hs, n_fcl) %>%
+  filter(partner == "Austria" & membership == 10) %>%
+  mutate(qty2 = round(qty2 / 1000),
+         value = round(value / 1000)) %>%
+
+```
+
+
+```{r}
+g1 <- data.frame(
+  from = c("hs3"),
+  to   = c("f1", "f2", "f3")) %>%
+  graph.data.frame()
+
+g2 <- data.frame(
+  from = c("hs3"),
+  to   = c("f1", "f2", "f3")) %>%
+  graph.data.frame()
+
+
+
+V(g1)$class <- ""
+V(g1)[1]$class <- "HS"
+V(g1)[2:4]$class <- "FCL"
+V(g1)[class == "HS"]$color <- "blue"
+V(g1)[class == "FCL"]$color <- "red"
+plot(g1)
+vcount(g1)
+V(g1)[class == "FCL"]
+length(V(g1)[class == "FCL"])
+```
+
+Creating of list of bipartite graphs
+
+```{r}
+graphs_list <- data1 %>%
+  mutate(fcl = as.character(fcl)) %>%
+  plyr::dlply(c('flow', 'reporter', 'partner', 'membership'), 
+              function(d) {nodes <- d %>%
+                             select(fcl, hs) %>%
+                             reshape2::melt(measure.vars = c('fcl', 'hs'), 
+                                        value.name = "code", 
+                                        variable.name = "class") %>%
+                             mutate(type = ifelse(class == "fcl", T, F))
+                           
+                           links <- d %>% select(hs, fcl)
+                           
+#                            return(list(nodes, links))
+                           
+                           g <- igraph::graph.data.frame(links, 
+                                                         directed = T, 
+                                                         vertices = nodes)
+                           
+                           g
+                           })
+                                        
+                             
+
+
 ```
 
