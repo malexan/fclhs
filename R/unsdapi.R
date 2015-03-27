@@ -28,7 +28,7 @@ getunct <- function(area, year, partner = "all",
                 r = area, # reporting area
                 freq = "A", # Annual
                 ps = year,
-                px = "H3", # HS2007
+                px = "HS", # HS as reported
                 p = partner, # partner area
                 rg = flow, # trade regime/flow
                 cc = paste(code, sep ="", collapse = ","), # classif.code. 
