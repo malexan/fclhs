@@ -6,12 +6,18 @@
 Harmonized System commodity codes from Market Access
 Database of the European Commission.}
 \usage{
-getmadb(country, hs)
+getmadb(country, hs, license.accept = F, drop.mfn = T)
 }
 \arguments{
 \item{country}{ISO3166 country code.}
 
 \item{hs}{HS numeric code of length 4 or 6.}
+
+\item{license.accept}{User has to explicitly accept the license.
+FALSE by default.}
+
+\item{drop.mfn}{Should a most favoured nation clause be dropped
+from resulting data.frame. TRUE by default.}
 }
 \value{
 Dataframe with columns country, hs code and description.
