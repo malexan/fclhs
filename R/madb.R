@@ -53,8 +53,8 @@ getmadb <- function(country, hs, license.accept = F, drop.mfn = T) {
   if(drop.mfn) df <- df[,c("hs", "desc")] # Drop MFN if required
   df <- cbind(country = toupper(country), df, stringsAsFactors = F) # Add country column
   df$hs <- sapply(df$hs, function(x) { 
-    if(x == "") return(NA)
-    stringr::str_replace(x, "\\.", "")
+    if(x == "") return(NA) # Replace empty HS-code with NA
+    stringr::str_replace(x, "\\.", "") # Remove dot in HS-codes
   })
   
   df
