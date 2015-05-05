@@ -69,7 +69,7 @@ select * from (
 #' @export
 gettfvalid <- function(reporter = NULL, year = NULL, partner = NULL,
                            flow = NULL, 
-                           fcl  = NULL) {
+                           fcl  = NULL, ...) {
   if(is.null(year)) stop("Please specify year")
   
   qselect <- "select * from (select 
@@ -88,6 +88,6 @@ gettfvalid <- function(reporter = NULL, year = NULL, partner = NULL,
   
   qfull <- paste0(qselect, filters)
   
-  faostatsql(qfull)
+  faostatsql(qfull, ...)
   
 }
