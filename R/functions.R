@@ -79,7 +79,8 @@ fcl2hs <- function(fcl) {
 #' Description of FCL-item
 #' @export
 descfcl <- function(item) {
-  fcl[fcl$fcl %in% item,]
+  if(length(item) > 1) unlist(lapply(item, descfcl))
+  fcl[fcl$fcl == item,]
 }
 
 # It doesn't work correclty!!!
