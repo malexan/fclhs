@@ -70,7 +70,16 @@ select * from (
 gettfvalid <- function(reporter = NULL, year = NULL, partner = NULL,
                            flow = NULL, 
                            fcl  = NULL, ...) {
+  
+  if(length(year) > 1) return(dplyr::bind_rows(lapply(year, function(y) {
+    gettfvalid(reporter = reporter, year = y, partner = partner,
+               flow = flow, fcl = fcl, ...)
+  })))
+    
+  
   if(is.null(year)) stop("Please specify year")
+  
+  
   
   qselect <- "select * from (select 
                 yr as year, 
