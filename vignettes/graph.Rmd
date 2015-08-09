@@ -10,7 +10,8 @@ library(dplyr)
 library(stringr)
 library(igraph)
 library(reshape2)
-library(fclhs)
+# library(fclhs)
+devtools::load_all("/home/sas/fao/fclhs/")
 
 areacodes2names <- function(code) {
   factor(code,
@@ -21,11 +22,13 @@ areacodes2names <- function(code) {
                            }))
   }
   
-
-data <- read.table("../trade//rf/world_TF_comp.csv.gz", 
+#datafile <- "/home/sas/trade/rf/world_TF_comp.csv.gz"
+datafile <- "/home/sas/0mc/projects/rom_fao_trade/sources/world_TF_comp.csv"
+data <- read.table(datafile, 
                    header = T, 
                    sep = ",",
                    nrows = 1191653,
+#                    nrows = 1000,
                    stringsAsFactors = F,
                    colClasses = c("integer", 
                                   "integer",
