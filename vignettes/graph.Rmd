@@ -10,8 +10,9 @@ library(dplyr)
 library(stringr)
 library(igraph)
 library(reshape2)
-# library(fclhs)
-devtools::load_all("/home/sas/fao/fclhs/")
+library(fclhs)
+# devtools::load_all("/home/sas/fao/fclhs/")
+# devtools::load_all("/home/sas/fclhs/")
 
 areacodes2names <- function(code) {
   factor(code,
@@ -22,8 +23,10 @@ areacodes2names <- function(code) {
                            }))
   }
   
-#datafile <- "/home/sas/trade/rf/world_TF_comp.csv.gz"
-datafile <- "/home/sas/0mc/projects/rom_fao_trade/sources/world_TF_comp.csv"
+if(Sys.getenv("HOSTNAME") == "matrunichstation")
+  datafile <- "/home/sas/trade/rf/world_TF_comp.csv.gz"
+if(Sys.getenv("HOSTNAME") == "sasmobile2.sasdomain")
+  datafile <- "/home/sas/0mc/projects/rom_fao_trade/sources/world_TF_comp.csv"
 data <- read.table(datafile, 
                    header = T, 
                    sep = ",",
@@ -51,11 +54,12 @@ data <- read.table(datafile,
          partner  = areacodes2names(partner),
          hs6      = factor(stringr::str_extract(hs, "^.{6}")),
          fcl      = factor(fcl),
-         flow     = factor(flow),
+         flow     = factor(flow, labels = c("Import", "Export", "re-Export")),
          qty2     = qty2,
          value    = value) %>%
   select(-hs) %>%
   rename(hs = hs6)
+
 
 
 ```

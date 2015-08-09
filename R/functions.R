@@ -36,13 +36,17 @@ areas <- function(value, from, to) {
 }
 
 
-areas2 <- function(area, to) {
-  if(length(area) > 1) return(unlist(lapply(area, areas2, to)))
+areas2 <- function(area0, to) {
+  if(length(area0) > 1) return(unlist(lapply(area0, areas2, to)))
   if(to == "fao") area <- 
-    unctfaoareasmap$fao[unctfaoareasmap$unct == area]
+    unctfaoareasmap$fao[unctfaoareasmap$unct == area0]
   if(to == "unct") area <- 
-    unctfaoareasmap$unct[unctfaoareasmap$fao == area]
+    unctfaoareasmap$unct[unctfaoareasmap$fao == area0]
   if(length(area) == 0) return(NA)
+  if(length(area) > 1) { 
+    warning(paste0("Multiple matches during convertion area codes\nfrom ", area0, " to ", to, ": ",
+                   paste(area, collapse = ", ")))
+  }
   area
 }
 
@@ -74,12 +78,6 @@ hs2fcl <- function(hs) {
 #' @export
 fcl2hs <- function(fcl) {
   unique(hsfclmap$hs[hsfclmap$fcl %in% fcl])
-}
-
-#' Description of FCL-item
-#' @export
-descfcl <- function(item) {
-  fcl[fcl$fcl %in% item,]
 }
 
 # It doesn't work correclty!!!
